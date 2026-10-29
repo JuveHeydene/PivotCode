@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph Poste["Poste de l'utilisateur"]
+        subgraph Nav["Navigateur (Chrome, Firefox…)"]
+            JS["Bundle JS (dist/assets/index-*.js, ~75 ko gzip)<br/>= React + éditeur + noyau"]
+            LSt[("localStorage<br/>clé « plateforme.document »")]
+            JS <--> LSt
+        end
+    end
+    subgraph Dev["Machine de développement"]
+        Vite["Serveur Vite<br/>pnpm dev :5173 / pnpm preview :4173"]
+    end
+    Vite -- "HTTP (fichiers statiques)" --> Nav

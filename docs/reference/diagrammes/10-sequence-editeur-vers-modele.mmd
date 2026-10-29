@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    actor U as Utilisateur
+    participant P as Palette / Editeur (React)
+    participant EA as EditeurApplicatif
+    participant AC as appliquerCommande (domaine pur)
+    participant G as GenerateurUuid
+    participant D as DepotLocalStorage
+    participant H as useDocument (useSyncExternalStore)
+
+    U->>P: clic « + Bouton »
+    P->>P: cibleAjout(document, selectionId, index) → { parentId, position? }
+    P->>EA: executer({ type: 'ajouter-noeud', parentId, composant: 'Bouton' })
+    EA->>AC: appliquerCommande(document, commande, catalogue, () => G.nouveau())
+    AC->>AC: vérifie : parent existe ? accepte des enfants ? composant connu ?
+    AC->>G: nouvelId()
+    G-->>AC: "e3d7…"
+    AC-->>EA: { succes: true, document: NOUVEAU, evenements: [noeud-ajoute] }
+    EA->>EA: this.passe.push(ancien), this.futur = []
+    EA->>EA: this.document = NOUVEAU
+    EA->>D: enregistrer(NOUVEAU)
+    EA->>H: écouteur(evenements) → prévenirReact()
+    H->>EA: lireDocument()
+    EA-->>H: NOUVEAU (référence différente ⇒ React réaffiche)
+    EA-->>P: { succes: true, evenements }
+    P->>P: setSelection(id du nœud ajouté)
+    Note over P,H: Canevas, Arbre et JSON se réaffichent à partir du MÊME document

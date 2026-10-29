@@ -1,0 +1,10 @@
+flowchart TB
+    racine["racine : Noeud<br/>composant = Conteneur<br/>direction = colonne, espacement = 8<br/>parentId = null"]
+    t1["t1 : Noeud<br/>composant = Texte<br/>contenu = « Bienvenue », taille = moyen<br/>parentId = racine"]
+    c1["c1 : Noeud<br/>composant = Conteneur<br/>direction = ligne, espacement = 8<br/>parentId = racine"]
+    b1["b1 : Noeud<br/>composant = Bouton<br/>libelle = « Valider », variante = principal<br/>parentId = c1"]
+    b2["b2 : Noeud<br/>composant = Bouton<br/>libelle = « Annuler », variante = secondaire<br/>parentId = c1"]
+    racine -- "enfants[0]" --> t1
+    racine -- "enfants[1]" --> c1
+    c1 -- "enfants[0]" --> b1
+    c1 -- "enfants[1]" --> b2

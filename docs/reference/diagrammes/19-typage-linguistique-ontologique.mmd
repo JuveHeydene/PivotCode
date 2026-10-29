@@ -1,0 +1,8 @@
+flowchart LR
+    b1["b1 (M1)<br/>{ composant: 'Bouton',<br/>proprietes: { libelle: 'Valider' } }"]
+    Noeud["Noeud (M2 structurel)<br/>type TypeScript"]
+    Bouton["Bouton (M2 vocabulaire)<br/>DefinitionComposant dans le catalogue"]
+    DefC["DefinitionComposant<br/>type TypeScript"]
+    b1 -- "instance linguistique de" --> Noeud
+    b1 -- "instance ontologique de<br/>(par le nom 'Bouton')" --> Bouton
+    Bouton -- "instance linguistique de" --> DefC

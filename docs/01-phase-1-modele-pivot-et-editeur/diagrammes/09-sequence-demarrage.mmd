@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant M as main.tsx (racine de composition)
+    participant EA as EditeurApplicatif
+    participant D as DepotLocalStorage
+    participant V as validerDocument
+    participant I as creerDocumentInitial
+    participant R as React (Editeur)
+
+    M->>M: catalogue = new Catalogue(composantsDeBase)
+    M->>EA: new EditeurApplicatif(catalogue, new GenerateurUuid(), new DepotLocalStorage(clé))
+    EA->>D: charger()
+    D-->>EA: unknown (JSON.parse du localStorage, ou null)
+    alt contenu présent ET validerDocument(contenu) = []
+        EA->>V: validerDocument(contenu, catalogue)
+        V-->>EA: []
+        EA->>EA: this.document = copierDocumentValide(contenu)
+    else rien, ou contenu invalide / corrompu
+        EA->>I: creerDocumentInitial(catalogue, () => uuid)
+        I-->>EA: document { racine Conteneur }
+        EA->>D: enregistrer(document)
+    end
+    M->>R: render(<Editeur service={service} />)
+    R->>EA: abonner(prévenirReact) (via useSyncExternalStore)
+    R->>EA: lireDocument()

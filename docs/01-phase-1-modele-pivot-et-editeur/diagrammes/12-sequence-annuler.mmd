@@ -1,0 +1,13 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant E as Editeur
+    participant EA as EditeurApplicatif
+    U->>E: Ctrl+Z (hors champ de saisie) ou bouton « ↶ Annuler »
+    E->>EA: annuler()
+    alt this.passe vide
+        EA-->>E: { succes: false, HISTORIQUE_VIDE }
+    else
+        EA->>EA: this.futur.push(this.document), precedent = this.passe.pop()
+        EA->>EA: this.changer(precedent, [document-remplace]) → enregistrer + notifier
+        EA-->>E: { succes: true }
+    end

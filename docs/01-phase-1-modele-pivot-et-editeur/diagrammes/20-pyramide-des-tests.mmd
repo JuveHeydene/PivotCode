@@ -1,0 +1,5 @@
+flowchart TB
+    E2E["🔺 Recette de bout en bout — 11 scénarios<br/>vrai Chrome + version de production<br/>apps/editeur/recette/recette.mjs  (≈ 5 s)"]
+    INT["Intégration de l'interface — 31 tests<br/>vraie interface React + vrai noyau, DOM simulé (jsdom)<br/>apps/editeur/src/*.test.ts(x)  (≈ 2 s)"]
+    UNIT["Unitaires du cœur — 82 tests<br/>domaine + application, Node, aucune technologie<br/>packages/noyau/test/*.test.ts  (≈ 0,5 s)"]
+    E2E --- INT --- UNIT

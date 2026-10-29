@@ -1,0 +1,52 @@
+classDiagram
+    direction TB
+    class Commande {
+        <<union discriminée par type>>
+    }
+    class AjouterNoeud {
+        type = 'ajouter-noeud'
+        parentId : NoeudId
+        composant : string
+        position? : number
+    }
+    class SupprimerNoeud {
+        type = 'supprimer-noeud'
+        id : NoeudId
+    }
+    class ModifierPropriete {
+        type = 'modifier-propriete'
+        id : NoeudId
+        nom : string
+        valeur : ValeurPropriete
+    }
+    class RemplacerDocument {
+        type = 'remplacer-document'
+        document : unknown
+    }
+    Commande <|-- AjouterNoeud
+    Commande <|-- SupprimerNoeud
+    Commande <|-- ModifierPropriete
+    Commande <|-- RemplacerDocument
+
+    class Evenement {
+        <<union discriminée par type>>
+        noeud-ajoute(id, parentId)
+        noeud-supprime(id)
+        propriete-modifiee(id, nom)
+        document-remplace
+    }
+    class ResultatCommande {
+        <<union discriminée par succes>>
+        succes=true : document, evenements
+        succes=false : erreurs
+    }
+    class FonctionsDuDomaine {
+        <<module commandes.ts / validation.ts>>
+        +appliquerCommande(document, commande, catalogue, nouvelId) ResultatCommande
+        +validerDocument(candidat: unknown, catalogue) ErreurModele[]
+        +copierDocumentValide(candidat) DocumentPivot
+        +creerDocumentInitial(catalogue, nouvelId) DocumentPivot
+    }
+    FonctionsDuDomaine ..> Commande : lit
+    FonctionsDuDomaine ..> ResultatCommande : produit
+    ResultatCommande ..> Evenement

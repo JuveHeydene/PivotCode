@@ -1,0 +1,21 @@
+flowchart LR
+    U(("👤 Concepteur<br/>(utilisateur)"))
+    subgraph Systeme["Éditeur low-code — tranche 1"]
+        UC1([Ajouter un composant depuis la palette])
+        UC2([Sélectionner un élément<br/>canevas ou arbre])
+        UC3([Modifier une propriété<br/>formulaire généré])
+        UC4([Supprimer un élément<br/>et ses descendants])
+        UC5([Consulter le modèle pivot JSON])
+        UC6([Éditer le modèle pivot JSON<br/>et l'appliquer])
+        UC7([Annuler / rétablir])
+        UC8([Charger l'exemple /<br/>nouveau document])
+        UCV([Valider un document<br/>R1 à R8])
+        UCP([Enregistrer le document])
+    end
+    U --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7 & UC8
+    UC6 -. "«include»" .-> UCV
+    UC8 -. "«include»" .-> UCV
+    UC1 -. "«include»" .-> UCP
+    UC3 -. "«include»" .-> UCP
+    UC4 -. "«include»" .-> UCP
+    UC6 -. "«include»" .-> UCP

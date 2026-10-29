@@ -1,0 +1,28 @@
+{
+  "name": "platforme_no_and_low_code",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plateforme low-code / no-code fondée sur un modèle pivot (monodépôt pnpm)",
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --filter @plateforme/editeur dev",
+    "build": "pnpm --filter @plateforme/editeur build",
+    "recette": "pnpm --filter @plateforme/editeur recette"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.14.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.14.0",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

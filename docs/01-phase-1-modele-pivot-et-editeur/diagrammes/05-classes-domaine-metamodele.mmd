@@ -1,0 +1,60 @@
+classDiagram
+    direction LR
+    class DocumentPivot {
+        <<type>>
+        +versionMetamodele : 1
+        +racineId : NoeudId
+        +noeuds : Record~NoeudId, Noeud~
+    }
+    class Noeud {
+        <<type>>
+        +id : NoeudId
+        +composant : string
+        +proprietes : Record~string, ValeurPropriete~
+        +parentId : NoeudId | null
+        +enfants : NoeudId[]
+    }
+    class ValeurPropriete {
+        <<union>>
+        string | number | boolean
+    }
+    class Catalogue {
+        <<class>>
+        -#definitions : DefinitionComposant[]
+        -#parNom : Map~string, DefinitionComposant~
+        -#proprietes : Map~string, ProprietesParNom~
+        +constructor(definitions)
+        +lister() DefinitionComposant[]
+        +trouver(nom) DefinitionComposant | undefined
+        +trouverPropriete(composant, nom) DefinitionPropriete | undefined
+    }
+    class DefinitionComposant {
+        <<type>>
+        +nom : string
+        +libelle : string
+        +accepteEnfants : boolean
+        +proprietes : DefinitionPropriete[]
+    }
+    class DefinitionPropriete {
+        <<union discriminée par type>>
+        +nom : string
+        +libelle : string
+        +obligatoire : boolean
+        +type : 'texte'|'nombre'|'booleen'|'choix'
+        +defaut : string | number | boolean, selon type
+        +choix : string[], seulement si type = choix
+    }
+    class ErreurModele {
+        <<type>>
+        +code : CodeErreur
+        +message : string
+        +noeudId? : NoeudId
+    }
+
+    DocumentPivot "1" *-- "1..*" Noeud : noeuds
+    Noeud "1" o-- "0..*" Noeud : enfants (par identifiant)
+    Noeud "0..*" --> "0..1" Noeud : parentId
+    Noeud ..> ValeurPropriete
+    Noeud "0..*" ..> "1" DefinitionComposant : composant (par nom)
+    Catalogue "1" o-- "0..*" DefinitionComposant
+    DefinitionComposant "1" *-- "0..*" DefinitionPropriete

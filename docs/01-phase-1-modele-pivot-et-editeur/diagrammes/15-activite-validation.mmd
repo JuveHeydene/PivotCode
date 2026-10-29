@@ -1,0 +1,20 @@
+flowchart TB
+    A([candidat : unknown]) --> R1{"R1 — objet ?<br/>versionMetamodele = 1 ?<br/>racineId texte ? noeuds objet ?"}
+    R1 -- non --> F1[["return [FORME_INVALIDE]"]]
+    R1 -- oui --> R2["R2 — pour chaque entrée de noeuds :<br/>forme du nœud + clé = id"]
+    R2 --> R2b{erreurs R2 ?}
+    R2b -- oui --> F2[["return erreurs R2<br/>(arrêt : éviter les erreurs en cascade)"]]
+    R2b -- non --> R3["R3 — racine existe et parentId = null"]
+    R3 --> L["pour chaque nœud"]
+    L --> R4{"R4 — composant<br/>dans le catalogue ?"}
+    R4 -- non --> E4[COMPOSANT_INCONNU]
+    R4 -- oui --> R5["R5 — propriétés : obligatoires présentes,<br/>types, choix, aucune inconnue"]
+    R5 --> R6["R6 — pas d'enfants si accepteEnfants = false"]
+    E4 --> R7
+    R6 --> R7["R7 — chaque enfant existe<br/>et son parentId = ce nœud"]
+    R7 --> L2{autre nœud ?}
+    L2 -- oui --> L
+    L2 -- non --> R8{racine valide ?}
+    R8 -- non --> FIN
+    R8 -- oui --> DFS["R8 — parcours en profondeur avec PILE + Set vus :<br/>déjà vu ⇒ CYCLE_OU_PARTAGE<br/>jamais vu à la fin ⇒ NOEUD_ORPHELIN"]
+    DFS --> FIN[["return toutes les erreurs<br/>([] = document conforme)"]]

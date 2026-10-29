@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Vide: démarrage (passé = [], futur = [])
+    Vide --> AvecPasse: commande réussie qui change le document
+    AvecPasse --> AvecPasse: commande réussie (futur effacé)
+    AvecPasse --> AvecPasseEtFutur: annuler [passé > 1]
+    AvecPasse --> SeulementFutur: annuler [passé = 1]
+    SeulementFutur --> AvecPasse: rétablir [futur = 1]
+    AvecPasseEtFutur --> AvecPasse: rétablir [futur = 1]
+    AvecPasseEtFutur --> AvecPasse: nouvelle commande (futur effacé)
+    SeulementFutur --> AvecPasse: nouvelle commande (futur effacé)

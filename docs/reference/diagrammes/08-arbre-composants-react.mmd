@@ -1,0 +1,8 @@
+flowchart TB
+    main["main.tsx<br/>(racine de composition)"] --> Editeur
+    Editeur["Editeur<br/>useDocument(service)<br/>état local : selectionId, erreurs"]
+    Editeur --> Palette["Palette<br/>(un bouton par DefinitionComposant)"]
+    Editeur --> Arbre["Arbre → BrancheArbre (récursif)"]
+    Editeur --> Canevas["Canevas → RenduNoeud (récursif)<br/>table rendus : Texte, Bouton, Conteneur"]
+    Editeur --> PP["PanneauProprietes → Champ × n<br/>(texte | ChampNombre | case | select)"]
+    Editeur --> VMP["VueModelePivot<br/>état : lecture | édition(brouillon, erreurs)"]

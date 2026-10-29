@@ -1,0 +1,363 @@
+:root {
+  --fond: #f4f5f7;
+  --surface: #ffffff;
+  --texte: #1d2129;
+  --texte-doux: #5b6372;
+  --bordure: #d8dce3;
+  --accent: #2f6fde;
+  --accent-doux: #e3ecfc;
+  --danger: #c4352b;
+  --danger-doux: #fdecea;
+  --code: #f7f8fa;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--texte);
+  background: var(--fond);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--bordure);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button.principal {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.lien {
+  border: none;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  padding: 0 4px;
+}
+
+h1 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texte-doux);
+  margin: 0 0 8px;
+}
+
+code {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+/* --- Mise en page : barre en haut, trois colonnes en dessous --- */
+
+.editeur {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 360px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'barre barre barre'
+    'messages messages messages'
+    'gauche centre droite';
+  height: 100vh;
+}
+
+.barre {
+  grid-area: barre;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.barre-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.messages {
+  grid-area: messages;
+  margin: 8px 16px 0;
+}
+
+.colonne {
+  overflow: auto;
+  padding: 12px;
+}
+
+.gauche {
+  grid-area: gauche;
+  border-right: 1px solid var(--bordure);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.centre {
+  grid-area: centre;
+  display: flex;
+  flex-direction: column;
+}
+
+.droite {
+  grid-area: droite;
+  border-left: 1px solid var(--bordure);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* --- Palette --- */
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.palette button {
+  text-align: left;
+}
+
+/* --- Arbre --- */
+
+.arbre,
+.arbre ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 14px;
+}
+
+.arbre {
+  padding-left: 0;
+}
+
+.arbre button {
+  border: 1px solid transparent;
+  background: none;
+  padding: 2px 6px;
+  text-align: left;
+  width: 100%;
+}
+
+.arbre button.selectionne {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+}
+
+.arbre-resume {
+  color: var(--texte-doux);
+}
+
+/* --- Canevas : le rendu interprété du modèle --- */
+
+.canevas {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.apercu {
+  cursor: pointer;
+  outline-offset: 2px;
+}
+
+.apercu:hover {
+  outline: 1px dashed var(--accent);
+}
+
+.apercu.selectionne {
+  outline: 2px solid var(--accent);
+}
+
+p.apercu {
+  margin: 0;
+}
+
+.apercu-conteneur {
+  display: flex;
+  align-items: flex-start;
+  min-height: 48px;
+  padding: 8px;
+  border: 1px dashed var(--bordure);
+  border-radius: 6px;
+}
+
+.apercu-bouton.principal {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.apercu-bouton.secondaire {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.apercu-bouton.desactive {
+  opacity: 0.45;
+}
+
+.apercu-inconnu {
+  color: var(--danger);
+}
+
+/* --- Panneau de propriétés --- */
+
+.proprietes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.proprietes-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.champ {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.champ input[type='text'],
+.champ input[type='number'],
+.champ select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--bordure);
+  border-radius: 4px;
+}
+
+.champ-booleen input {
+  justify-self: start;
+}
+
+.proprietes .danger {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.indice {
+  color: var(--texte-doux);
+  font-size: 0.9rem;
+}
+
+/* --- Modèle pivot (JSON) --- */
+
+.section-json {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.modele-pivot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.modele-pivot-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.modele-pivot .taille {
+  margin-left: auto;
+  color: var(--texte-doux);
+  font-size: 0.8rem;
+}
+
+.modele-pivot pre,
+.modele-pivot textarea {
+  flex: 1;
+  margin: 0;
+  min-height: 240px;
+  overflow: auto;
+  background: var(--code);
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.modele-pivot textarea {
+  resize: vertical;
+  border-color: var(--accent);
+}
+
+/* --- Erreurs --- */
+
+.erreurs {
+  background: var(--danger-doux);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.erreurs p,
+.erreurs ul {
+  margin: 4px 0 0;
+}
+
+.erreurs ul {
+  padding-left: 18px;
+}
+
+.erreurs code {
+  color: var(--danger);
+  font-weight: 600;
+}

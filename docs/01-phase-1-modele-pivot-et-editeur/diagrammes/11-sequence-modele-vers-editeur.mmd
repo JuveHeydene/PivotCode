@@ -1,0 +1,30 @@
+sequenceDiagram
+    autonumber
+    actor U as Utilisateur
+    participant VM as VueModelePivot
+    participant EA as EditeurApplicatif
+    participant AC as appliquerCommande
+    participant V as validerDocument
+
+    U->>VM: « Modifier » (brouillon = JSON actuel), édite, « Appliquer »
+    VM->>VM: JSON.parse(brouillon)
+    alt erreur de syntaxe
+        VM-->>U: « JSON invalide (syntaxe) » + message, reste en édition
+    else JSON lisible
+        VM->>EA: executer({ type: 'remplacer-document', document: valeurLue })
+        EA->>AC: appliquerCommande(...)
+        AC->>V: validerDocument(valeurLue, catalogue)
+        alt au moins une erreur (R1…R8)
+            V-->>AC: [ErreurModele…]
+            AC-->>EA: { succes: false, erreurs }
+            EA-->>VM: { succes: false, erreurs }  (document, dépôt, abonnés : INCHANGÉS)
+            VM-->>U: liste « code + message + voir », reste en édition
+        else document conforme
+            V-->>AC: []
+            AC->>AC: copierDocumentValide(valeurLue)
+            AC-->>EA: { succes: true, document, [document-remplace] }
+            EA->>EA: historique, enregistrement, notification (comme 5.2)
+            EA-->>VM: { succes: true }
+            VM->>VM: retour en mode lecture
+        end
+    end

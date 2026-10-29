@@ -1,0 +1,43 @@
+flowchart LR
+    subgraph PERIPH_IN["Adaptateurs ENTRANTS"]
+        direction TB
+        UI["Interface React<br/>Editeur.tsx + composants/*"]
+        HOOK["useDocument()<br/>use-document.ts"]
+    end
+
+    subgraph COEUR["CŒUR — packages/noyau (TypeScript pur, aucune dépendance)"]
+        direction LR
+        PIN{{"«port entrant»<br/>ServiceEditeur"}}
+        EA["EditeurApplicatif<br/>Observateur + historique"]
+        subgraph DOM["Domaine (fonctions pures)"]
+            direction TB
+            CMD["appliquerCommande()"]
+            VAL["validerDocument() R1…R8"]
+            CAT["Catalogue"]
+            MM["Noeud, DocumentPivot"]
+        end
+        POUT1{{"«port sortant»<br/>GenerateurIdentifiants"}}
+        POUT2{{"«port sortant»<br/>DepotDocument"}}
+    end
+
+    subgraph PERIPH_OUT["Adaptateurs SORTANTS"]
+        direction TB
+        UUID["GenerateurUuid<br/>crypto.randomUUID()"]
+        LS["DepotLocalStorage<br/>localStorage"]
+        SEQ["GenerateurSequentiel (tests)"]
+        MEM["DepotMemoire (tests)"]
+    end
+
+    UI -- "executer(commande)" --> PIN
+    HOOK -- "abonner, lireDocument" --> PIN
+    PIN -. "implémenté par" .- EA
+    EA --> CMD
+    CMD --> VAL
+    CMD --> MM
+    VAL --> CAT
+    EA -- "utilise" --> POUT1
+    EA -- "utilise" --> POUT2
+    POUT1 -. "implémenté par" .- UUID
+    POUT1 -. "implémenté par" .- SEQ
+    POUT2 -. "implémenté par" .- LS
+    POUT2 -. "implémenté par" .- MEM

@@ -1,0 +1,8 @@
+flowchart TB
+    M3["M3 — Méta-métamodèle<br/>Système de types TypeScript + JSON"]
+    M2["M2 — Métamodèle<br/>DocumentPivot, Noeud (structure)<br/>+ Catalogue : Texte, Bouton, Conteneur (vocabulaire)<br/>+ règles R1…R8 (contraintes)"]
+    M1["M1 — Modèle<br/>{ racineId: 'racine', noeuds: { racine, t1, c1, b1, b2 } }"]
+    M0["M0 — Réalité<br/>&lt;div&gt; &lt;p&gt;Bienvenue&lt;/p&gt; &lt;div&gt;&lt;button&gt;Valider&lt;/button&gt;…"]
+    M1 -- "conformsTo<br/>(vérifié par validerDocument)" --> M2
+    M2 -- "conformsTo<br/>(vérifié par le compilateur tsc)" --> M3
+    M0 -- "représenté par<br/>(produit par l'interprète : Canevas)" --> M1

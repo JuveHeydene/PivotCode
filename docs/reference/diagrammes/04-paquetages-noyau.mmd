@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph noyau["@plateforme/noyau"]
+        INDEX["index.ts<br/>(API publique — Façade)"]
+        subgraph application
+            ports["ports/<br/>service-editeur.ts<br/>generateur-identifiants.ts<br/>depot-document.ts"]
+            ea["editeur-applicatif.ts"]
+        end
+        subgraph domaine
+            noeud["noeud.ts"]
+            composant["composant.ts"]
+            base["composants-base.ts"]
+            err["erreur.ts"]
+            val["validation.ts"]
+            init["document-initial.ts"]
+            cmd["commandes.ts"]
+        end
+    end
+    INDEX --> application & domaine
+    ea --> ports
+    ea --> cmd & val & init & err
+    ports --> noeud & composant & err & cmd
+    cmd --> val & composant & noeud & err
+    val --> composant & noeud & err
+    init --> composant & noeud
+    base --> composant
+    composant --> noeud
+    err --> noeud

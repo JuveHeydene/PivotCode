@@ -1,0 +1,60 @@
+classDiagram
+    direction LR
+    class ServiceEditeur {
+        <<interface — port entrant>>
+        +lireDocument() DocumentPivot
+        +lireCatalogue() DefinitionComposant[]
+        +executer(commande) ResultatExecution
+        +abonner(ecouteur) () => void
+        +annuler() ResultatExecution
+        +retablir() ResultatExecution
+        +peutAnnuler() boolean
+        +peutRetablir() boolean
+    }
+    class GenerateurIdentifiants {
+        <<interface — port sortant>>
+        +nouveau() NoeudId
+    }
+    class DepotDocument {
+        <<interface — port sortant>>
+        +charger() unknown
+        +enregistrer(document) void
+    }
+    class EditeurApplicatif {
+        -#catalogue : Catalogue
+        -#identifiants : GenerateurIdentifiants
+        -#depot : DepotDocument
+        -#ecouteurs : Set~Ecouteur~
+        -#document : DocumentPivot
+        -#passe : DocumentPivot[]
+        -#futur : DocumentPivot[]
+        +constructor(catalogue, identifiants, depot)
+        -#changer(document, evenements)
+        -#restaurer(document)
+    }
+    class GenerateurUuid {
+        +nouveau() NoeudId
+    }
+    class DepotLocalStorage {
+        -#cle : string
+        -#stockage : Storage
+        +charger() unknown
+        +enregistrer(document) void
+    }
+    class GenerateurSequentiel {
+        <<doublure de test>>
+    }
+    class DepotMemoire {
+        <<doublure de test>>
+        +contenu : unknown
+        +nombreEnregistrements : number
+    }
+
+    ServiceEditeur <|.. EditeurApplicatif
+    EditeurApplicatif --> GenerateurIdentifiants
+    EditeurApplicatif --> DepotDocument
+    EditeurApplicatif --> Catalogue
+    GenerateurIdentifiants <|.. GenerateurUuid
+    GenerateurIdentifiants <|.. GenerateurSequentiel
+    DepotDocument <|.. DepotLocalStorage
+    DepotDocument <|.. DepotMemoire
