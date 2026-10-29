@@ -1,11 +1,29 @@
 flowchart TB
     subgraph racine["platforme_no_and_low_code (racine, private)"]
-        TS["typescript 7.0.2<br/>(outil partagé, devDependency)"]
+        TS["typescript 7.0.2<br/>(outil partagé)"]
         subgraph packages
-            NOYAU["@plateforme/noyau<br/>exports: ./src/index.ts<br/>dépendances de production : AUCUNE<br/>dev : vitest"]
+            NOYAU["@plateforme/noyau<br/>dépendances de production : AUCUNE"]
+            RW["@plateforme/rendu-web<br/>règles modèle → web, palette"]
+            GR["@plateforme/generateur-react"]
+            GV["@plateforme/generateur-vue"]
+            FI["@plateforme/format-imbrique<br/>à plat ↔ imbriqué (échange)"]
+            SJ["@plateforme/schema-json<br/>catalogue → JSON Schema<br/>(à plat et imbriqué)"]
         end
         subgraph apps
-            EDIT["@plateforme/editeur<br/>dépendances : react, react-dom,<br/>@plateforme/noyau (workspace:*)<br/>dev : vite, vitest, jsdom,<br/>testing-library, playwright-core, oxlint"]
+            EDIT["@plateforme/editeur<br/>react, react-dom, fflate,<br/>+ les 6 paquets ci-contre"]
         end
     end
-    EDIT -- "dépend de (lien local workspace:*)" --> NOYAU
+    RW --> NOYAU
+    GR --> RW
+    GR --> NOYAU
+    GV --> RW
+    GV --> NOYAU
+    EDIT --> NOYAU
+    EDIT --> RW
+    EDIT --> GR
+    EDIT --> GV
+    EDIT --> SJ
+    SJ --> NOYAU
+    SJ --> FI
+    FI --> NOYAU
+    EDIT --> FI

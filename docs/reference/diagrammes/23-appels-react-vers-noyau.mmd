@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant R as React (Editeur, composants)
+    participant H as useDocument
+    participant S as service (EditeurApplicatif)
+    participant D as DepotLocalStorage
+
+    Note over R,S: Démarrage
+    R->>S: lireCatalogue()
+    H->>S: abonner(écouteur)
+    H->>S: lireDocument()
+
+    Note over U,D: Chaque action
+    U->>R: clic, frappe, Appliquer…
+    R->>S: executer(commande)
+    S->>S: vérifier, calculer le nouveau document, historique
+    S->>D: enregistrer(document)
+    S->>H: écouteur() — « ça a changé »
+    H->>S: lireDocument()
+    H->>R: nouveau document : redessiner
+    S-->>R: { succes, evenements } ou { succes: false, erreurs }
+
+    Note over U,D: Annuler / rétablir
+    U->>R: Ctrl+Z ou « ↶ Annuler »
+    R->>S: annuler()
+    S->>D: enregistrer(document précédent)
+    S->>H: écouteur()
+    H->>S: lireDocument()

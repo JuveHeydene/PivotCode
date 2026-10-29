@@ -123,6 +123,12 @@ describe('validerDocument', () => {
       expect(codes(doc)).toEqual(['PROPRIETE_TYPE_INVALIDE']);
     });
 
+    it('refuse un nombre hors bornes (marge négative)', () => {
+      const doc = copieModifiable(documentValide());
+      doc.noeuds.racine!.proprietes['margeInterne'] = -1;
+      expect(codes(doc)).toEqual(['PROPRIETE_TYPE_INVALIDE']);
+    });
+
     it('refuse un choix non permis', () => {
       const doc = copieModifiable(documentValide());
       doc.noeuds.t1!.proprietes['taille'] = 'énorme';
@@ -131,7 +137,7 @@ describe('validerDocument', () => {
 
     it('refuse une propriété inconnue', () => {
       const doc = copieModifiable(documentValide());
-      doc.noeuds.t1!.proprietes['couleur'] = 'rouge';
+      doc.noeuds.t1!.proprietes['clignotement'] = true;
       expect(codes(doc)).toEqual(['PROPRIETE_INCONNUE']);
     });
 

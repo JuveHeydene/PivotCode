@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph packages
+        NOYAU["@plateforme/noyau<br/>(inchangé)"]
+        RW["@plateforme/rendu-web"]
+        GR["@plateforme/generateur-react"]
+        GV["@plateforme/generateur-vue"]
+        FI["@plateforme/format-imbrique  NOUVEAU<br/>versImbrique() / depuisImbrique()<br/>(tests : fast-check)"]
+        SJ["@plateforme/schema-json<br/>+ genererSchemaImbrique()<br/>+ document-imbrique.v1.schema.json"]
+    end
+    subgraph apps
+        ED["@plateforme/editeur<br/>+ panneau JSON : À plat / Imbriqué, ⤓<br/>+ import d'un document imbriqué collé"]
+    end
+    RW --> NOYAU
+    GR --> RW
+    GV --> RW
+    FI -- "validerDocument" --> NOYAU
+    SJ --> NOYAU
+    SJ -- "FORMAT_IMBRIQUE" --> FI
+    ED --> NOYAU
+    ED --> RW
+    ED --> GR
+    ED --> GV
+    ED --> SJ
+    ED --> FI

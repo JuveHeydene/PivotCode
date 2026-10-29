@@ -1,0 +1,55 @@
+classDiagram
+    direction LR
+    class ElementWeb {
+        <<type>>
+        +balise : div | p | button
+        +style : StyleWeb
+        +texte? : string
+        +desactive? : boolean
+    }
+    class NoeudWeb {
+        <<type>>
+        +id : NoeudId
+        +composant : string
+        +enfants : NoeudWeb[]
+    }
+    class StyleWeb {
+        <<type>>
+        Record camelCase vers valeur CSS
+    }
+    class Regles {
+        <<module regles.ts>>
+        -regles : Record composant vers Regle
+        +aUneRegle(composant) boolean
+        +decrireNoeud(noeud, catalogue) ElementWeb ou null
+    }
+    class Lecteur {
+        -noeud : Noeud
+        -catalogue : Catalogue
+        +texte(nom) string
+        +nombre(nom) number
+        +booleen(nom) boolean
+    }
+    class ArbreWeb {
+        <<module arbre-web.ts>>
+        +arbreWeb(document, catalogue, options) NoeudWeb
+    }
+    class GenerateurReact {
+        <<module>>
+        +genererApp(document, catalogue) string
+        +genererProjetReact(document, catalogue, options) FichierGenere[]
+    }
+    class GenerateurVue {
+        <<module>>
+        +genererApp(document, catalogue) string
+        +genererProjetVue(document, catalogue, options) FichierGenere[]
+    }
+    ElementWeb <|-- NoeudWeb
+    ElementWeb --> StyleWeb
+    NoeudWeb --> NoeudWeb : enfants
+    Regles ..> Lecteur : crée
+    Regles ..> ElementWeb : produit
+    ArbreWeb ..> Regles : utilise
+    ArbreWeb ..> NoeudWeb : produit
+    GenerateurReact ..> ArbreWeb
+    GenerateurVue ..> ArbreWeb

@@ -1,0 +1,17 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant E as Editeur
+    participant G as genererProjetReact
+    participant A as arbreWeb
+    participant J as lignesJsx
+    participant T as telechargerZip (adaptateur)
+    U->>E: clic Exporter React
+    E->>G: genererProjetReact(document, catalogue, nom)
+    G->>A: arbreWeb(document, catalogue, inconnu erreur)
+    A-->>G: NoeudWeb
+    G->>J: lignesJsx(arbre, niveau 2)
+    J-->>G: lignes de App.jsx
+    G-->>E: 7 fichiers (package.json, index.html, vite.config.js, main.jsx, App.jsx, index.css, README.md)
+    E->>T: telecharger(application-generee-react, fichiers)
+    T->>T: zipSync avec une date fixe, puis Blob et lien de téléchargement
+    T-->>U: application-generee-react.zip

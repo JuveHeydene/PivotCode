@@ -1,7 +1,7 @@
 # Tous les appels de React vers le noyau
 
 > 🟢 **Document de RÉFÉRENCE : il décrit l'état ACTUEL du système.**
-> Dernière mise à jour : **27/10/2026, état à la fin de la phase 1**.
+> Dernière mise à jour : **29/10/2026, état à la fin de la phase 4**.
 >
 > React ne parle au noyau **que** par l'objet `service`, qui implémente le port entrant `ServiceEditeur`. Ce document liste **tous** ces appels, dit **quand** ils ont lieu et **ce que fait le noyau** en réponse.
 > Pour suivre une fonctionnalité de bout en bout, voir aussi [04-fonctionnement-des-fonctionnalites.md](04-fonctionnement-des-fonctionnalites.md).
@@ -21,16 +21,25 @@
 
 | Méthode | Appelée dans | Quand |
 |---|---|---|
-| `lireCatalogue()` | `Editeur.tsx` (l. 22) | Une fois, au premier affichage |
+| `lireCatalogue()` | `Editeur.tsx` (l. 41) | Une fois, au premier affichage |
 | `abonner(écouteur)` | `adaptateurs/use-document.ts` (l. 11) | Une fois, au premier affichage |
 | `lireDocument()` | `adaptateurs/use-document.ts` (l. 12) | Au premier affichage, puis **après chaque changement** |
-| `executer(commande)` | `Editeur.tsx` (l. 35), `composants/VueModelePivot.tsx` (l. 44) | **À chaque action** de l'utilisateur |
-| `annuler()` | `Editeur.tsx` (l. 50 : bouton ; l. 67 : Ctrl+Z) | Clic « ↶ Annuler » ou Ctrl+Z |
-| `retablir()` | `Editeur.tsx` (l. 55 : bouton ; l. 70 : Ctrl+Y) | Clic « ↷ Rétablir » ou Ctrl+Y |
-| `peutAnnuler()` | `Editeur.tsx` (l. 82) | À chaque affichage de la barre |
-| `peutRetablir()` | `Editeur.tsx` (l. 85) | À chaque affichage de la barre |
+| `executer(commande)` | `Editeur.tsx` (l. 58), `composants/VueModelePivot.tsx` (l. 84) ; via `executer` : `glisser-deposer/use-glisser-deposer.ts` (l. 89, 93) | **À chaque action** de l'utilisateur |
+| `annuler()` | `Editeur.tsx` (l. 100 : bouton ; l. 117 : Ctrl+Z) | Clic « ↶ Annuler » ou Ctrl+Z |
+| `retablir()` | `Editeur.tsx` (l. 105 : bouton ; l. 120 : Ctrl+Y) | Clic « ↷ Rétablir » ou Ctrl+Y |
+| `peutAnnuler()` | `Editeur.tsx` (l. 132) | À chaque affichage de la barre |
+| `peutRetablir()` | `Editeur.tsx` (l. 135) | À chaque affichage de la barre |
 
-Les numéros de ligne correspondent à l'état du code au 27/10/2026.
+Les numéros de ligne correspondent à l'état du code à la fin de la phase 4 (29/10/2026).
+
+**Ce qui n'appelle PAS le noyau** *(phases 2 et 3)* :
+- **l'export** (« ⤓ Exporter React / Vue ») ;
+- **le rendu du canevas** (`arbreWeb`) ;
+- **le mode aperçu**.
+
+S'y ajoutent, en phase 3, **le calcul de la zone de dépôt** pendant un glissement et **le téléchargement du JSON Schema**. Tous **lisent** le document déjà obtenu par `lireDocument()` ou le catalogue obtenu par `lireCatalogue()`, et ne modifient rien. Aucun nouvel appel au service n'a été nécessaire en phases 2 et 3 : le port `ServiceEditeur` n'a pas changé. Le glisser-déposer utilise la méthode existante `executer`.
+
+En phase 4, la **présentation imbriquée** (`versImbrique`) ne fait que lire le document. L'**import** d'un document imbriqué (`depuisImbrique`) appelle la fonction pure `validerDocument`, exportée par le noyau : elle ne modifie rien et ne passe pas par le service, comme `trouverNoeud` ou `Catalogue`. Le changement lui-même passe, comme toujours, par `executer({ type: 'remplacer-document' })`. Le port `ServiceEditeur` n'a toujours pas changé.
 
 ---
 
@@ -56,16 +65,20 @@ use-document.ts    service.lireDocument()   → le document actuel → canevas, 
 
 C'est **le seul moyen** de modifier le modèle pivot.
 
-### 4.1 Les 6 situations où React l'appelle
+### 4.1 Les 10 situations où React l'appelle
 
 | Action à l'écran | Fichier | Commande envoyée |
 |---|---|---|
 | Clic sur « + Texte / + Bouton / + Conteneur » | `Editeur.tsx` → `ajouter` | `{ type: 'ajouter-noeud', parentId, composant, position? }` |
 | Frappe dans un champ du panneau de propriétés | `Editeur.tsx` (prop `onModifier`) | `{ type: 'modifier-propriete', id, nom, valeur }` |
 | Clic sur « Supprimer » | `Editeur.tsx` (prop `onSupprimer`) | `{ type: 'supprimer-noeud', id }` |
-| « Appliquer » sur le JSON édité | `VueModelePivot.tsx` → `appliquer` | `{ type: 'remplacer-document', document }` |
+| « Appliquer » sur le JSON édité (à plat, ou imbriqué converti d'abord, phase 4) | `VueModelePivot.tsx` → `appliquer` | `{ type: 'remplacer-document', document }` |
 | « Charger l'exemple » | `Editeur.tsx` | `{ type: 'remplacer-document', document: documentExemple }` |
 | « Nouveau document » | `Editeur.tsx` | `{ type: 'remplacer-document', document: documentVide(…) }` |
+| « Charger la démo » *(phase 2)* | `Editeur.tsx` | `{ type: 'remplacer-document', document: documentDemonstration }` |
+| « ↑ Monter » / « ↓ Descendre » *(phase 3)* | `Editeur.tsx` → `deplacerDe(±1)` | `{ type: 'deplacer-noeud', id, nouveauParentId: parent, position: rang ± 1 }` |
+| Glisser **depuis la palette** et déposer *(phase 3)* | `use-glisser-deposer.ts` → `deposer` | `{ type: 'ajouter-noeud', parentId, composant, position }` |
+| Glisser **un élément** (canevas, arbre) et déposer *(phase 3)* | `use-glisser-deposer.ts` → `deposer` | `{ type: 'deplacer-noeud', id, nouveauParentId, position }` |
 
 ### 4.2 Ce que fait le noyau, toujours dans le même ordre
 

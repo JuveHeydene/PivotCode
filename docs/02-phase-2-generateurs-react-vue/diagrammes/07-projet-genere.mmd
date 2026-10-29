@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph ZIP["application-generee-react.zip (ou -vue)"]
+        PKG["package.json<br/>react, react-dom, vite<br/>(ou vue, vite)"]
+        HTML["index.html<br/>div root (ou app)"]
+        MAIN["src/main.jsx<br/>(ou main.js)"]
+        APP["src/App.jsx<br/>(ou App.vue)<br/>LA PAGE"]
+        CSS["src/index.css<br/>CSS de base commun"]
+    end
+    DEV["npm install<br/>npm run dev"] --> NAV["Navigateur<br/>même rendu que le canevas"]
+    ZIP --> DEV

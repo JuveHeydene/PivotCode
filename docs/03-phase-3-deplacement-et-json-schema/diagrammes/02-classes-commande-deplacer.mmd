@@ -1,0 +1,19 @@
+classDiagram
+    class Commande {
+        <<union discriminée par type>>
+    }
+    class DeplacerNoeud {
+        type = 'deplacer-noeud'
+        id : NoeudId
+        nouveauParentId : NoeudId
+        position? : number (comptée sans le nœud)
+    }
+    class NoeudDeplace {
+        <<Evenement>>
+        type = 'noeud-deplace'
+        id
+        ancienParentId
+        nouveauParentId
+    }
+    Commande <|-- DeplacerNoeud
+    DeplacerNoeud ..> NoeudDeplace : produit

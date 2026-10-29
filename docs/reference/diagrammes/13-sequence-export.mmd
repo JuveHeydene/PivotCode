@@ -1,0 +1,13 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant E as Editeur
+    participant G as genererProjetReact
+    participant A as arbreWeb (rendu-web)
+    participant T as telechargerZip (adaptateur)
+    U->>E: clic Exporter React
+    E->>G: genererProjetReact(document, catalogue, nom)
+    G->>A: arbreWeb(document, catalogue, inconnu erreur)
+    A-->>G: arbre web (balise, style, texte)
+    G-->>E: 7 fichiers dont src/App.jsx
+    E->>T: telecharger(application-generee-react, fichiers)
+    T-->>U: application-generee-react.zip

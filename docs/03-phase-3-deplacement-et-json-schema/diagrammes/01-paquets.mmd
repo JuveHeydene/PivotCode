@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph packages
+        NOYAU["@plateforme/noyau<br/>+ commande deplacer-noeud<br/>+ estDansSousArbre()"]
+        RW["@plateforme/rendu-web"]
+        GR["@plateforme/generateur-react"]
+        GV["@plateforme/generateur-vue"]
+        SJ["@plateforme/schema-json  NOUVEAU<br/>catalogue → JSON Schema 2020-12<br/>(tests : Ajv, fast-check)"]
+    end
+    subgraph apps
+        ED["@plateforme/editeur<br/>+ glisser-deposer/ (règles pures + hook)<br/>+ Monter / Descendre<br/>+ bouton JSON Schema"]
+    end
+    RW --> NOYAU
+    GR --> RW
+    GV --> RW
+    SJ --> NOYAU
+    ED --> NOYAU
+    ED --> RW
+    ED --> GR
+    ED --> GV
+    ED --> SJ

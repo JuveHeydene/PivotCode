@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph PLAT["À PLAT : l'annuaire (format interne, D8)"]
+        direction TB
+        T["noeuds"]
+        R1["racine<br/>enfants: [t1, c1]<br/>parentId: null"]
+        A1["t1 : Texte<br/>parentId: racine"]
+        C1["c1 : Conteneur<br/>enfants: [b1]<br/>parentId: racine"]
+        B1["b1 : Bouton<br/>parentId: c1"]
+        T --- R1 & A1 & C1 & B1
+        R1 -. "référence" .-> A1
+        R1 -. "référence" .-> C1
+        C1 -. "référence" .-> B1
+    end
+    subgraph IMB["IMBRIQUÉ : les poupées russes (format d'échange, D71)"]
+        direction TB
+        R2["racine : Conteneur"]
+        A2["Texte"]
+        C2["Conteneur"]
+        B2["Bouton"]
+        R2 --> A2
+        R2 --> C2
+        C2 --> B2
+    end
+    PLAT == "versImbrique()<br/>O(n)" ==> IMB
+    IMB == "depuisImbrique()<br/>O(n) + validation R1…R8" ==> PLAT

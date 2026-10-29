@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plateforme-low-code.local/schemas/document-pivot/v1.schema.json",
+  "title": "Document pivot",
+  "description": "Modèle pivot d’une interface (version 1 du métamodèle). Produit automatiquement à partir du catalogue des composants.",
+  "type": "object",
+  "required": [
+    "versionMetamodele",
+    "racineId",
+    "noeuds"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "versionMetamodele": {
+      "const": 1
+    },
+    "racineId": {
+      "type": "string",
+      "description": "Identifiant du nœud racine."
+    },
+    "noeuds": {
+      "type": "object",
+      "description": "Table à plat : identifiant → nœud.",
+      "additionalProperties": {
+        "$ref": "#/$defs/Noeud"
+      }
+    }
+  },
+  "$defs": {
+    "Noeud": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Texte"
+        },
+        {
+          "$ref": "#/$defs/Bouton"
+        },
+        {
+          "$ref": "#/$defs/Conteneur"
+        }
+      ]
+    },
+    "Texte": {
+      "type": "object",
+      "title": "Texte",
+      "description": "Un nœud de type Texte.",
+      "required": [
+        "id",
+        "composant",
+        "proprietes",
+        "parentId",
+        "enfants"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant du nœud (égal à sa clé dans « noeuds »)."
+        },
+        "composant": {
+          "const": "Texte"
+        },
+        "parentId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Identifiant du parent ; null uniquement pour la racine."
+        },
+        "enfants": {
+          "type": "array",
+          "maxItems": 0,
+          "description": "Un Texte n’accepte pas d’enfants."
+        },
+        "proprietes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contenu"
+          ],
+          "properties": {
+            "contenu": {
+              "type": "string",
+              "title": "Contenu",
+              "default": "Nouveau texte"
+            },
+            "taille": {
+              "type": "string",
+              "enum": [
+                "petit",
+                "moyen",
+                "grand"
+              ],
+              "title": "Taille",
+              "default": "moyen"
+            },
+            "couleur": {
+              "type": "string",
+              "enum": [
+                "primaire",
+                "secondaire",
+                "succes",
+                "danger",
+                "neutre",
+                "gris",
+                "clair",
+                "blanc"
+              ],
+              "title": "Couleur",
+              "default": "neutre"
+            },
+            "gras": {
+              "type": "boolean",
+              "title": "Gras",
+              "default": false
+            },
+            "alignementTexte": {
+              "type": "string",
+              "enum": [
+                "gauche",
+                "centre",
+                "droite"
+              ],
+              "title": "Alignement du texte",
+              "default": "gauche"
+            },
+            "marge": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge externe (px)",
+              "default": 0
+            }
+          }
+        }
+      }
+    },
+    "Bouton": {
+      "type": "object",
+      "title": "Bouton",
+      "description": "Un nœud de type Bouton.",
+      "required": [
+        "id",
+        "composant",
+        "proprietes",
+        "parentId",
+        "enfants"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant du nœud (égal à sa clé dans « noeuds »)."
+        },
+        "composant": {
+          "const": "Bouton"
+        },
+        "parentId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Identifiant du parent ; null uniquement pour la racine."
+        },
+        "enfants": {
+          "type": "array",
+          "maxItems": 0,
+          "description": "Un Bouton n’accepte pas d’enfants."
+        },
+        "proprietes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "libelle"
+          ],
+          "properties": {
+            "libelle": {
+              "type": "string",
+              "title": "Libellé",
+              "default": "Bouton"
+            },
+            "variante": {
+              "type": "string",
+              "enum": [
+                "principal",
+                "secondaire"
+              ],
+              "title": "Variante",
+              "default": "principal"
+            },
+            "couleur": {
+              "type": "string",
+              "enum": [
+                "primaire",
+                "secondaire",
+                "succes",
+                "danger",
+                "neutre"
+              ],
+              "title": "Couleur",
+              "default": "primaire"
+            },
+            "pleineLargeur": {
+              "type": "boolean",
+              "title": "Pleine largeur",
+              "default": false
+            },
+            "desactive": {
+              "type": "boolean",
+              "title": "Désactivé",
+              "default": false
+            },
+            "marge": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge externe (px)",
+              "default": 0
+            }
+          }
+        }
+      }
+    },
+    "Conteneur": {
+      "type": "object",
+      "title": "Conteneur",
+      "description": "Un nœud de type Conteneur.",
+      "required": [
+        "id",
+        "composant",
+        "proprietes",
+        "parentId",
+        "enfants"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant du nœud (égal à sa clé dans « noeuds »)."
+        },
+        "composant": {
+          "const": "Conteneur"
+        },
+        "parentId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Identifiant du parent ; null uniquement pour la racine."
+        },
+        "enfants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Identifiants des enfants, dans l’ordre d’affichage."
+        },
+        "proprietes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": [
+                "colonne",
+                "ligne"
+              ],
+              "title": "Direction",
+              "default": "colonne"
+            },
+            "espacement": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Espacement (px)",
+              "default": 8
+            },
+            "alignement": {
+              "type": "string",
+              "enum": [
+                "debut",
+                "centre",
+                "fin",
+                "etirer"
+              ],
+              "title": "Alignement des enfants",
+              "default": "debut"
+            },
+            "justification": {
+              "type": "string",
+              "enum": [
+                "debut",
+                "centre",
+                "fin",
+                "espace"
+              ],
+              "title": "Répartition des enfants",
+              "default": "debut"
+            },
+            "margeInterne": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge interne (px)",
+              "default": 8
+            },
+            "fond": {
+              "type": "string",
+              "enum": [
+                "aucun",
+                "primaire",
+                "secondaire",
+                "succes",
+                "danger",
+                "neutre",
+                "gris",
+                "clair",
+                "blanc"
+              ],
+              "title": "Fond",
+              "default": "aucun"
+            },
+            "bordure": {
+              "type": "boolean",
+              "title": "Bordure",
+              "default": false
+            },
+            "arrondi": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Arrondi (px)",
+              "default": 0
+            },
+            "marge": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge externe (px)",
+              "default": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

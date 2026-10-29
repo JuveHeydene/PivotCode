@@ -1,0 +1,6 @@
+flowchart LR
+    E["Document imbriqué reçu<br/>(IA, autre outil, JSON collé)"] --> S{"JSON Schema imbriqué<br/>forme, composants, propriétés,<br/>enfants interdits, arbre"}
+    S -- refusé --> X1["Erreur de forme<br/>(lisible par n'importe quel outil)"]
+    S -- accepté --> N{"Import<br/>SEULE règle restante :<br/>identifiants uniques"}
+    N -- refusé --> X2["IDENTIFIANT_DEJA_UTILISE"]
+    N -- accepté --> OK["Document accepté<br/>(le noyau revalide tout)"]

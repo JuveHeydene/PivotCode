@@ -1,0 +1,15 @@
+flowchart TB
+    A([deplacer-noeud id, nouveauParentId, position]) --> B{le nœud existe ?}
+    B -- non --> E1[NOEUD_INTROUVABLE]
+    B -- oui --> C{est-ce la racine ?}
+    C -- oui --> E2[RACINE_IMMOBILE]
+    C -- non --> D{le nouveau parent existe ?}
+    D -- non --> E1
+    D -- oui --> F{accepte des enfants ?}
+    F -- non --> E3[ENFANTS_INTERDITS]
+    F -- oui --> G{"estDansSousArbre(id, nouveauParentId) ?<br/>on remonte les parentId : O(profondeur)"}
+    G -- oui --> E4[DEPLACEMENT_CYCLIQUE]
+    G -- non --> H["position bornée, comptée SANS le nœud"]
+    H --> I{même parent et même position ?}
+    I -- oui --> J[[même document, aucun événement]]
+    I -- non --> K[["nouveau document :<br/>ancien parent sans le nœud,<br/>nouveau parent avec le nœud,<br/>parentId mis à jour"]]

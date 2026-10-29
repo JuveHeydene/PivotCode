@@ -72,12 +72,17 @@ D'après [02-proposition…, §6.2](02-proposition-de-conception-et-phases.md) e
 
 Une **phase** correspond à une **tranche verticale** : elle traverse toutes les couches, sur un petit périmètre, et se termine par **quelque chose qui marche et qu'on peut montrer**.
 
+> Mise à jour du 29/10/2026 : les générateurs ont été avancés en phase 2 et le glisser-déposer repoussé en phase 3 (décision [D34](../02-phase-2-generateurs-react-vue/04-decisions.md)).
+>
+> Mise à jour du 29/10/2026 (bis) : une phase 4 courte, **non prévue**, a été insérée : le format d'échange imbriqué (décision [D71](../04-phase-4-format-d-echange-imbrique/03-decisions.md)). Les phases suivantes sont décalées d'un numéro.
+
 | Phase | Résultat démontrable | Objectifs servis | Lots du doc de proposition | Dossier |
 |---|---|---|---|---|
 | **1** | **Poser un composant dans l'éditeur et le voir dans le modèle pivot, et inversement** | OG1, OQ1–OQ3, OQ5, OQ6 | P1 (partie), P2 (début) | [01-phase-1-modele-pivot-et-editeur/](../01-phase-1-modele-pivot-et-editeur/) ✅ |
-| 2 | Déplacer des nœuds, glisser-déposer, métamodèle en **JSON Schema** | OG1, OQ2 | P1, P2 | à venir |
-| 3 | Exporter **le même modèle** en projet React **et** en projet Vue | **OG2**, OQ4 | P4 (début) | à venir |
-| 4 | Ajouter un composant **par un plugin**, sans modifier le noyau | OG6, OQ4 | P1, P2 | à venir |
-| 5 | Styles, jetons de design, pages et navigation | OG1 | P2 | à venir |
-| 6 | Variables, expressions, événements : une application qui réagit | OG1 | P3 | à venir |
-| 7+ | Backend généré, connexion aux API, agent IA | OG3, **OG4**, OG5 | P5, P6, P7 | à venir |
+| **2** | **Mise en page et style ; exporter le même modèle en projet React et en projet Vue** (parité mesurée) | **OG1, OG2**, OQ1, OQ4, OQ6 | P2, P4 (début) | [02-phase-2-generateurs-react-vue/](../02-phase-2-generateurs-react-vue/) ✅ |
+| **3** | **Déplacer des nœuds, glisser-déposer, métamodèle en JSON Schema** | OG1, OQ2, OQ3 ; prépare OG4, OG5 | P1, P2 | [03-phase-3-deplacement-et-json-schema/](../03-phase-3-deplacement-et-json-schema/) ✅ |
+| **4** | **Échanger une interface dans un format imbriqué que JSON Schema vérifie presque entièrement** | OQ2, OQ3 ; prépare OG4, OG5 | P1 | [04-phase-4-format-d-echange-imbrique/](../04-phase-4-format-d-echange-imbrique/) ✅ |
+| 5 | Ajouter un composant **par un plugin**, sans modifier le noyau | OG6, OQ4 | P1, P2 | à venir |
+| 6 | Jetons de design modifiables, plusieurs pages et navigation | OG1 | P2 | à venir |
+| 7 | Variables, expressions, événements : une application qui réagit | OG1 | P3 | à venir |
+| 8+ | Backend généré, connexion aux API, agent IA | OG3, **OG4**, OG5 | P5, P6, P7 | à venir |

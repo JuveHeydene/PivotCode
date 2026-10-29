@@ -27,6 +27,20 @@ describe('Catalogue', () => {
     expect(() => new Catalogue([composantsDeBase[0]!, composantsDeBase[0]!])).toThrow(/deux fois/);
   });
 
+  it('refuse une valeur par défaut hors des bornes', () => {
+    expect(
+      () =>
+        new Catalogue([
+          {
+            nom: 'X',
+            libelle: 'X',
+            accepteEnfants: false,
+            proprietes: [{ nom: 'p', libelle: 'p', type: 'nombre', defaut: -1, min: 0, obligatoire: false }],
+          },
+        ]),
+    ).toThrow(/minimale/);
+  });
+
   it('refuse une valeur par défaut hors des choix', () => {
     expect(
       () =>

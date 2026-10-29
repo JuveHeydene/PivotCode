@@ -10,9 +10,12 @@ type Props = {
   estRacine: boolean;
   onModifier: (nom: string, valeur: ValeurPropriete) => void;
   onSupprimer: () => void;
+  /** Déplacer d'un rang parmi les frères (−1 = monter, +1 = descendre) ; absent = impossible. */
+  onMonter?: (() => void) | undefined;
+  onDescendre?: (() => void) | undefined;
 };
 
-export function PanneauProprietes({ noeud, definition, estRacine, onModifier, onSupprimer }: Props) {
+export function PanneauProprietes({ noeud, definition, estRacine, onModifier, onSupprimer, onMonter, onDescendre }: Props) {
   return (
     <div className="proprietes">
       <div className="proprietes-entete">
@@ -26,9 +29,17 @@ export function PanneauProprietes({ noeud, definition, estRacine, onModifier, on
           <Champ key={`${noeud.id}/${p.nom}`} definition={p} valeur={noeud.proprietes[p.nom]} onModifier={(v) => onModifier(p.nom, v)} />
         ))
       )}
-      <button type="button" className="danger" onClick={onSupprimer} disabled={estRacine} title={estRacine ? 'La racine ne peut pas être supprimée' : undefined}>
-        Supprimer
-      </button>
+      <div className="proprietes-actions">
+        <button type="button" onClick={onMonter} disabled={onMonter === undefined} title="Placer avant l’élément précédent">
+          ↑ Monter
+        </button>
+        <button type="button" onClick={onDescendre} disabled={onDescendre === undefined} title="Placer après l’élément suivant">
+          ↓ Descendre
+        </button>
+        <button type="button" className="danger" onClick={onSupprimer} disabled={estRacine} title={estRacine ? 'La racine ne peut pas être supprimée' : undefined}>
+          Supprimer
+        </button>
+      </div>
     </div>
   );
 }

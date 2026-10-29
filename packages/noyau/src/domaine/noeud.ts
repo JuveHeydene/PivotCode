@@ -27,6 +27,21 @@ export type DocumentPivot = {
   readonly noeuds: Readonly<Record<NoeudId, Noeud>>;
 };
 
+/**
+ * Vrai si `id` est `ancetreId` lui-même ou l'un de ses descendants.
+ * On REMONTE de `id` vers la racine en suivant les `parentId` : O(profondeur),
+ * sans parcourir le sous-arbre. C'est le bénéfice de la double liaison (D8).
+ * La boucle est bornée par le nombre de nœuds, par sécurité.
+ */
+export function estDansSousArbre(document: DocumentPivot, ancetreId: NoeudId, id: NoeudId): boolean {
+  let courant: NoeudId | null = id;
+  for (let pas = Object.keys(document.noeuds).length; courant !== null && pas >= 0; pas--) {
+    if (courant === ancetreId) return true;
+    courant = trouverNoeud(document, courant)?.parentId ?? null;
+  }
+  return false;
+}
+
 /** Accès sûr à un nœud : ignore les clés héritées comme `toString` ou `__proto__`. */
 export function trouverNoeud(document: DocumentPivot, id: NoeudId): Noeud | undefined {
   return Object.hasOwn(document.noeuds, id) ? document.noeuds[id] : undefined;

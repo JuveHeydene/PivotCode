@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plateforme-low-code.local/schemas/document-imbrique/v1.schema.json",
+  "title": "Document pivot (format d’échange imbriqué)",
+  "description": "Le même modèle pivot, chaque nœud contenant ses enfants. Format d’échange (humains, outils, IA). Produit automatiquement à partir du catalogue.",
+  "type": "object",
+  "required": [
+    "format",
+    "versionMetamodele",
+    "racine"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "pivot-imbrique"
+    },
+    "versionMetamodele": {
+      "const": 1
+    },
+    "racine": {
+      "$ref": "#/$defs/Noeud"
+    }
+  },
+  "$defs": {
+    "Noeud": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Texte"
+        },
+        {
+          "$ref": "#/$defs/Bouton"
+        },
+        {
+          "$ref": "#/$defs/Conteneur"
+        }
+      ]
+    },
+    "Texte": {
+      "type": "object",
+      "title": "Texte",
+      "description": "Un nœud de type Texte.",
+      "required": [
+        "composant",
+        "proprietes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Facultatif. S’il est absent, il est fabriqué à l’import. Doit être unique dans le document."
+        },
+        "composant": {
+          "const": "Texte"
+        },
+        "proprietes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contenu"
+          ],
+          "properties": {
+            "contenu": {
+              "type": "string",
+              "title": "Contenu",
+              "default": "Nouveau texte"
+            },
+            "taille": {
+              "type": "string",
+              "enum": [
+                "petit",
+                "moyen",
+                "grand"
+              ],
+              "title": "Taille",
+              "default": "moyen"
+            },
+            "couleur": {
+              "type": "string",
+              "enum": [
+                "primaire",
+                "secondaire",
+                "succes",
+                "danger",
+                "neutre",
+                "gris",
+                "clair",
+                "blanc"
+              ],
+              "title": "Couleur",
+              "default": "neutre"
+            },
+            "gras": {
+              "type": "boolean",
+              "title": "Gras",
+              "default": false
+            },
+            "alignementTexte": {
+              "type": "string",
+              "enum": [
+                "gauche",
+                "centre",
+                "droite"
+              ],
+              "title": "Alignement du texte",
+              "default": "gauche"
+            },
+            "marge": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge externe (px)",
+              "default": 0
+            }
+          }
+        }
+      }
+    },
+    "Bouton": {
+      "type": "object",
+      "title": "Bouton",
+      "description": "Un nœud de type Bouton.",
+      "required": [
+        "composant",
+        "proprietes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Facultatif. S’il est absent, il est fabriqué à l’import. Doit être unique dans le document."
+        },
+        "composant": {
+          "const": "Bouton"
+        },
+        "proprietes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "libelle"
+          ],
+          "properties": {
+            "libelle": {
+              "type": "string",
+              "title": "Libellé",
+              "default": "Bouton"
+            },
+            "variante": {
+              "type": "string",
+              "enum": [
+                "principal",
+                "secondaire"
+              ],
+              "title": "Variante",
+              "default": "principal"
+            },
+            "couleur": {
+              "type": "string",
+              "enum": [
+                "primaire",
+                "secondaire",
+                "succes",
+                "danger",
+                "neutre"
+              ],
+              "title": "Couleur",
+              "default": "primaire"
+            },
+            "pleineLargeur": {
+              "type": "boolean",
+              "title": "Pleine largeur",
+              "default": false
+            },
+            "desactive": {
+              "type": "boolean",
+              "title": "Désactivé",
+              "default": false
+            },
+            "marge": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge externe (px)",
+              "default": 0
+            }
+          }
+        }
+      }
+    },
+    "Conteneur": {
+      "type": "object",
+      "title": "Conteneur",
+      "description": "Un nœud de type Conteneur.",
+      "required": [
+        "composant",
+        "proprietes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Facultatif. S’il est absent, il est fabriqué à l’import. Doit être unique dans le document."
+        },
+        "composant": {
+          "const": "Conteneur"
+        },
+        "proprietes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": [
+                "colonne",
+                "ligne"
+              ],
+              "title": "Direction",
+              "default": "colonne"
+            },
+            "espacement": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Espacement (px)",
+              "default": 8
+            },
+            "alignement": {
+              "type": "string",
+              "enum": [
+                "debut",
+                "centre",
+                "fin",
+                "etirer"
+              ],
+              "title": "Alignement des enfants",
+              "default": "debut"
+            },
+            "justification": {
+              "type": "string",
+              "enum": [
+                "debut",
+                "centre",
+                "fin",
+                "espace"
+              ],
+              "title": "Répartition des enfants",
+              "default": "debut"
+            },
+            "margeInterne": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge interne (px)",
+              "default": 8
+            },
+            "fond": {
+              "type": "string",
+              "enum": [
+                "aucun",
+                "primaire",
+                "secondaire",
+                "succes",
+                "danger",
+                "neutre",
+                "gris",
+                "clair",
+                "blanc"
+              ],
+              "title": "Fond",
+              "default": "aucun"
+            },
+            "bordure": {
+              "type": "boolean",
+              "title": "Bordure",
+              "default": false
+            },
+            "arrondi": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Arrondi (px)",
+              "default": 0
+            },
+            "marge": {
+              "type": "number",
+              "minimum": 0,
+              "title": "Marge externe (px)",
+              "default": 0
+            }
+          }
+        },
+        "enfants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Noeud"
+          },
+          "description": "Les enfants, dans l’ordre d’affichage. Absent = aucun."
+        }
+      }
+    }
+  }
+}

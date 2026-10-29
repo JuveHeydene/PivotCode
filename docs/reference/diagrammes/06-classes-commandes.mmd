@@ -13,6 +13,12 @@ classDiagram
         type = 'supprimer-noeud'
         id : NoeudId
     }
+    class DeplacerNoeud {
+        type = 'deplacer-noeud'
+        id : NoeudId
+        nouveauParentId : NoeudId
+        position? : number
+    }
     class ModifierPropriete {
         type = 'modifier-propriete'
         id : NoeudId
@@ -25,6 +31,7 @@ classDiagram
     }
     Commande <|-- AjouterNoeud
     Commande <|-- SupprimerNoeud
+    Commande <|-- DeplacerNoeud
     Commande <|-- ModifierPropriete
     Commande <|-- RemplacerDocument
 
@@ -32,6 +39,7 @@ classDiagram
         <<union discriminée par type>>
         noeud-ajoute(id, parentId)
         noeud-supprime(id)
+        noeud-deplace(id, ancienParentId, nouveauParentId)
         propriete-modifiee(id, nom)
         document-remplace
     }

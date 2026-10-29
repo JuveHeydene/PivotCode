@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph EXT_IN["Adaptateurs ENTRANTS"]
+        UI["Interface React<br/>(Editeur, composants)"]
+    end
+    subgraph COEUR["CŒUR — noyau"]
+        S{{"port ServiceEditeur"}}
+        D["Domaine<br/>Noeud, Catalogue, validation"]
+    end
+    subgraph LECTEURS["Lecteurs du modèle (fonctions pures)"]
+        RW["rendu-web<br/>arbreWeb()"]
+        GR["generateur-react"]
+        GV["generateur-vue"]
+    end
+    subgraph EXT_OUT["Adaptateurs SORTANTS"]
+        ZIP["telechargement.ts<br/>(zip + navigateur)"]
+        LS["DepotLocalStorage"]
+    end
+    UI -- "executer, lireDocument" --> S
+    UI -- "document lu" --> RW
+    UI -- "document lu" --> GR
+    UI -- "document lu" --> GV
+    RW -. "lit les types et le catalogue" .-> D
+    GR --> RW
+    GV --> RW
+    UI -- "fichiers générés" --> ZIP
+    S -. "implémenté par" .- LS

@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph NAV["Navigateur (événements HTML5)"]
+        DS[dragstart]
+        DO[dragover]
+        DR[drop]
+    end
+    subgraph HOOK["use-glisser-deposer.ts (React)"]
+        ETAT["état : glisse, survol"]
+        CALC["calculer(id, contexte, e)"]
+    end
+    subgraph PURES["regles-depot.ts (fonctions pures)"]
+        Z["zoneDepot(rect, point, axe, accepteEnfants)"]
+        C["cibleDepot(document, cible, zone, idDeplace)"]
+        P["depotPermis(document, index, glisse, parentId)"]
+        AX["axeDesEnfants(document, parentId)"]
+    end
+    subgraph NOY["Noyau"]
+        EDS["estDansSousArbre()"]
+        EX["service.executer(ajouter-noeud ou deplacer-noeud)"]
+    end
+    DS --> ETAT
+    DO --> CALC
+    DR --> CALC
+    CALC --> AX & Z & C & P
+    P --> EDS
+    CALC -- "dépôt permis" --> EX

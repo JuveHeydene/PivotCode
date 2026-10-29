@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Repos
+    Repos --> Glissement: dragstart (palette, canevas ou arbre)
+    Glissement --> Glissement: dragover sur une cible permise / indication
+    Glissement --> Glissement: dragover sur une cible interdite / aucune indication
+    Glissement --> Repos: drop permis / commande envoyée
+    Glissement --> Repos: drop interdit ou dragend / rien

@@ -2,7 +2,7 @@
 // construite (`vite build`), servie par `vite preview`.
 // Déroule les scénarios S1 à S7 de l'étape 13 et enregistre des captures.
 // Usage : pnpm recette   (depuis la racine du monodépôt)
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { preview } from 'vite';
 import { chromium } from 'playwright-core';
@@ -35,7 +35,18 @@ function verifier(condition, message) {
   if (!condition) throw new Error(message);
 }
 const json = async () => JSON.parse(await page.getByLabel('Modèle pivot (JSON)', { exact: true }).textContent());
-const capture = (nom) => page.screenshot({ path: `${CAPTURES}/${nom}.png` });
+// Chrome refuse parfois une capture prise juste après un rechargement
+// (« Unable to capture screenshot », phase 2, problème P2-07) : on attend
+// l'affichage, puis on retente une fois.
+async function capture(nom) {
+  await page.locator('.canevas').waitFor();
+  try {
+    await page.screenshot({ path: `${CAPTURES}/${nom}.png` });
+  } catch {
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${CAPTURES}/${nom}.png` });
+  }
+}
 const dansCanevas = (id) => page.locator(`.canevas [data-noeud-id="${id}"]`);
 async function editerJson(transformer) {
   await page.getByRole('button', { name: 'Modifier' }).click();
@@ -162,6 +173,155 @@ try {
     const doc = await json();
     verifier(Object.keys(doc.noeuds).length === 5, '5 nœuds attendus');
     await capture('09-demo-construction-souris');
+  });
+
+  // --- Phase 3 : glisser-déposer RÉEL (souris) et déplacements ---
+  const ligneArbre = (id) => page.locator(`[data-arbre-id="${id}"]`);
+  async function chargerExemple() {
+    await page.getByRole('button', { name: 'Charger l’exemple' }).click();
+    await page.locator('.canevas').click({ position: { x: 5, y: 5 } });
+  }
+  /** Glisse `source` et relâche au point (fx, fy) de `cible`, en fractions de sa taille. */
+  async function glisser(source, cible, fx = 0.5, fy = 0.5) {
+    const boite = await cible.boundingBox();
+    await source.dragTo(cible, { targetPosition: { x: boite.width * fx, y: boite.height * fy } });
+  }
+  /** Relâche dans la MARGE INTÉRIEURE gauche d'un conteneur : seul le conteneur est sous la souris. */
+  async function glisserDansLaMarge(source, conteneur) {
+    const boite = await conteneur.boundingBox();
+    await source.dragTo(conteneur, { targetPosition: { x: 3, y: boite.height / 2 } });
+  }
+
+  await scenario('P3-1 Glisser « + Bouton » de la palette DANS un conteneur (sur sa marge intérieure)', async () => {
+    await chargerExemple();
+    await glisserDansLaMarge(page.getByRole('button', { name: '+ Bouton' }), dansCanevas('c1'));
+    const doc = await json();
+    verifier(doc.noeuds.c1.enfants.length === 3, `c1.enfants = ${doc.noeuds.c1.enfants}`);
+    verifier(doc.noeuds[doc.noeuds.c1.enfants[2]].composant === 'Bouton', 'un Bouton ajouté à la fin de c1');
+  });
+
+  await scenario('P3-2 Glisser un élément du canevas vers un autre conteneur', async () => {
+    await chargerExemple();
+    await glisserDansLaMarge(dansCanevas('t1'), dansCanevas('c1'));
+    const doc = await json();
+    verifier(doc.noeuds.t1.parentId === 'c1', `t1.parentId = ${doc.noeuds.t1.parentId}`);
+    verifier(JSON.stringify(doc.noeuds.racine.enfants) === '["c1"]', `racine.enfants = ${doc.noeuds.racine.enfants}`);
+  });
+
+  await scenario('P3-3 Dans un conteneur EN LIGNE : déposer à GAUCHE d’un bouton le place avant lui', async () => {
+    await chargerExemple();
+    await glisser(dansCanevas('b2'), dansCanevas('b1'), 0.15, 0.5);
+    verifier(JSON.stringify((await json()).noeuds.c1.enfants) === '["b2","b1"]', 'b2 avant b1');
+  });
+
+  await scenario('P3-4 Dans l’ARBRE : déposer en bas d’une ligne place après', async () => {
+    await chargerExemple();
+    await glisser(ligneArbre('t1'), ligneArbre('b2'), 0.5, 0.85);
+    const doc = await json();
+    verifier(JSON.stringify(doc.noeuds.c1.enfants) === '["b1","b2","t1"]', `c1.enfants = ${doc.noeuds.c1.enfants}`);
+  });
+
+  await scenario('P3-5 Dépôt INTERDIT (un conteneur dans lui-même) : rien ne change', async () => {
+    await chargerExemple();
+    const avant = JSON.stringify(await json());
+    await glisser(ligneArbre('c1'), ligneArbre('c1'), 0.5, 0.5);
+    verifier(JSON.stringify(await json()) === avant, 'document inchangé');
+  });
+
+  await scenario('P3-6 Retour visuel pendant le glissement, puis Ctrl+Z annule le déplacement', async () => {
+    await chargerExemple();
+    const source = page.getByRole('button', { name: '+ Texte' });
+    const cible = dansCanevas('c1');
+    await source.hover();
+    await page.mouse.down();
+    // Au CENTRE de c1 se trouve un bouton (c1 est ajusté à son contenu) : on vise sa marge intérieure.
+    const boite = await cible.boundingBox();
+    await page.mouse.move(boite.x + 3, boite.y + boite.height / 2, { steps: 5 });
+    await page.mouse.move(boite.x + 4, boite.y + boite.height / 2, { steps: 2 });
+    verifier((await cible.getAttribute('class')).includes('depot-dedans'), 'indication « dedans » affichée');
+    await capture('14-p3-glisser-retour-visuel');
+    await page.mouse.up();
+    verifier((await json()).noeuds.c1.enfants.length === 3, 'Texte déposé dans c1');
+    await page.locator('h1').click();
+    await page.keyboard.press('Control+z');
+    verifier((await json()).noeuds.c1.enfants.length === 2, 'Ctrl+Z a annulé l’ajout');
+  });
+
+  await scenario('P3-7 « ↓ Descendre » puis « ↑ Monter »', async () => {
+    await chargerExemple();
+    await dansCanevas('t1').click();
+    await page.getByRole('button', { name: '↓ Descendre' }).click();
+    verifier(JSON.stringify((await json()).noeuds.racine.enfants) === '["c1","t1"]', 'descendu');
+    await page.getByRole('button', { name: '↑ Monter' }).click();
+    verifier(JSON.stringify((await json()).noeuds.racine.enfants) === '["t1","c1"]', 'remonté');
+    await capture('15-p3-monter-descendre');
+  });
+
+  // --- Phase 4 : format d'échange imbriqué ---
+  const panneauJson = () => page.getByLabel('Modèle pivot (JSON)', { exact: true });
+
+  await scenario('P4-1 « Imbriqué » : le même document en poupées russes, téléchargeable', async () => {
+    await chargerExemple();
+    await page.getByRole('button', { name: 'Imbriqué' }).click();
+    const imbrique = JSON.parse(await panneauJson().textContent());
+    verifier(imbrique.format === 'pivot-imbrique', 'champ format');
+    verifier(JSON.stringify(imbrique.racine.enfants[1].enfants.map((e) => e.id)) === '["b1","b2"]', 'boutons DANS c1');
+    verifier(!(await panneauJson().textContent()).includes('parentId'), 'aucun parentId');
+    const [telechargement] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Télécharger interface.imbrique.json' }).click(),
+    ]);
+    verifier(telechargement.suggestedFilename() === 'interface.imbrique.json', 'nom du fichier');
+    const contenu = JSON.parse(readFileSync(await telechargement.path(), 'utf8'));
+    verifier(JSON.stringify(contenu) === JSON.stringify(imbrique), 'contenu téléchargé = contenu affiché');
+    await capture('16-p4-vue-imbriquee');
+  });
+
+  await scenario('P4-2 Coller un document imbriqué SANS identifiants : il remplace l’interface', async () => {
+    await page.getByRole('button', { name: 'Modifier' }).click();
+    await page.getByLabel('Modèle pivot (JSON) en édition').fill(
+      JSON.stringify(
+        {
+          format: 'pivot-imbrique',
+          versionMetamodele: 1,
+          racine: {
+            composant: 'Conteneur',
+            proprietes: { direction: 'colonne', espacement: 12 },
+            enfants: [
+              { composant: 'Texte', proprietes: { contenu: 'Écrit en poupées russes', taille: 'grand' } },
+              {
+                composant: 'Conteneur',
+                proprietes: { direction: 'ligne', espacement: 8 },
+                enfants: [
+                  { composant: 'Bouton', proprietes: { libelle: 'Oui' } },
+                  { composant: 'Bouton', proprietes: { libelle: 'Non', variante: 'secondaire' } },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    await page.getByRole('button', { name: 'Appliquer' }).click();
+    verifier((await page.locator('.canevas').textContent()).includes('Écrit en poupées russes'), 'texte visible');
+    verifier((await page.locator('.canevas').getByRole('button', { name: 'Non' }).count()) === 1, 'bouton visible');
+    const imbrique = JSON.parse(await panneauJson().textContent());
+    verifier(imbrique.racine.id === 'n1' && imbrique.racine.enfants[1].enfants[1].id === 'n5', 'identifiants fabriqués n1…n5');
+    await capture('17-p4-import-imbrique');
+  });
+
+  await scenario('P4-3 Document imbriqué invalide : refusé, et l’erreur dit OÙ', async () => {
+    const avant = await page.evaluate(() => localStorage.getItem('plateforme.document'));
+    await editerJson((t) => t.replace('"Non"', '42'));
+    const alerte = await page.getByRole('alert').textContent();
+    verifier(alerte.includes('PROPRIETE_TYPE_INVALIDE') && alerte.includes('racine.enfants[1].enfants[1]'), 'code et chemin');
+    await capture('18-p4-erreur-avec-chemin');
+    await page.getByRole('button', { name: 'Abandonner' }).click();
+    verifier((await page.evaluate(() => localStorage.getItem('plateforme.document'))) === avant, 'document inchangé');
+    await page.getByRole('button', { name: 'À plat' }).click();
+    verifier((await json()).racineId === 'n1', 'retour au format à plat');
   });
 
   verifier(erreursConsole.length === 0, `erreurs dans la console : ${erreursConsole.join(' | ')}`);

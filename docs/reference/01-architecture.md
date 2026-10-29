@@ -1,16 +1,16 @@
 # Architecture actuelle du système
 
 > 🟢 **Document de RÉFÉRENCE : il décrit l'état ACTUEL du système.**
-> Dernière mise à jour : **21/10/2026, état à la fin de la phase 1**. Il est mis à jour à la fin de chaque phase.
-> La version figée de la phase 1 se trouve dans [03-conception-architecture.md](../01-phase-1-modele-pivot-et-editeur/03-conception-architecture.md) ; comparer les deux montre l'évolution.
+> Dernière mise à jour : **29/10/2026, état à la fin de la phase 4**. Il est mis à jour à la fin de chaque phase.
+> Versions figées : [phase 1 › 03](../01-phase-1-modele-pivot-et-editeur/03-conception-architecture.md), [phase 2 › 02](../02-phase-2-generateurs-react-vue/02-conception-architecture.md), [phase 3 › 02](../03-phase-3-deplacement-et-json-schema/02-conception-architecture.md) ; comparer montre l'évolution.
 
 > Ce document décrit **comment le système est construit**, avec des diagrammes UML.
-> Le métamodèle est détaillé dans [02-metamodele.md](02-metamodele.md), les décisions dans [phase 1 › 05-decisions.md](../01-phase-1-modele-pivot-et-editeur/05-decisions.md).
+> Le métamodèle est détaillé dans [02-metamodele.md](02-metamodele.md), les décisions dans [05-decisions-en-vigueur.md](05-decisions-en-vigueur.md), la transformation en code dans [phase 2 › 03](../02-phase-2-generateurs-react-vue/03-transformation-modele-vers-code.md).
 > Conventions : les noms de classes, types et fichiers sont **ceux du code**.
 
 ---
 
-## 1. Objectif fonctionnel de la tranche 1
+## 1. Ce que le système permet aujourd'hui
 
 | Sens | Action de l'utilisateur | Résultat attendu | Réalisé |
 |---|---|---|---|
@@ -18,14 +18,19 @@
 | Modèle → éditeur | Modifie le JSON (libellé, nouveau nœud), clique « Appliquer » | Le canevas et l'arbre affichent le changement | ✅ |
 | Garde-fou | Écrit un JSON incorrect (règle du métamodèle violée, ou virgule oubliée) | Message d'erreur clair, **rien ne change** | ✅ |
 | Persistance | Recharge la page | Le travail est toujours là | ✅ |
-| Bonus | Ctrl+Z / Ctrl+Y | Annuler / rétablir | ✅ |
+| Historique | Ctrl+Z / Ctrl+Y | Annuler / rétablir | ✅ |
+| Mise en page et style *(phase 2)* | Règle alignement, répartition, marges, couleurs, fond, bordure, arrondi… | Le canevas applique le style ; les champs apparaissent seuls dans le panneau | ✅ |
+| Aperçu *(phase 2)* | Clique « 👁 Aperçu » | Rendu exact, sans repères d'édition | ✅ |
+| **Export** *(phase 2)* | Clique « ⤓ Exporter React » ou « ⤓ Exporter Vue » | Un `.zip` contenant un projet Vite qui démarre et affiche **le même rendu** que le canevas | ✅ |
+| **Réorganiser** *(phase 3)* | Glisse un élément (palette, canevas, arbre), ou « ↑ Monter » / « ↓ Descendre » | L'élément se place avant, après ou dans la cible ; un dépôt interdit (cycle) est impossible ; Ctrl+Z annule | ✅ |
+| **JSON Schema** *(phase 3)* | Clique « ⤓ JSON Schema » | Le métamodèle au format standard, produit à partir du catalogue | ✅ |
 
 ### Diagramme de cas d'utilisation
 
 ```mermaid
 flowchart LR
     U(("👤 Concepteur<br/>(utilisateur)"))
-    subgraph Systeme["Éditeur low-code — tranche 1"]
+    subgraph Systeme["Éditeur low-code — état actuel"]
         UC1([Ajouter un composant depuis la palette])
         UC2([Sélectionner un élément<br/>canevas ou arbre])
         UC3([Modifier une propriété<br/>formulaire généré])
@@ -34,10 +39,16 @@ flowchart LR
         UC6([Éditer le modèle pivot JSON<br/>et l'appliquer])
         UC7([Annuler / rétablir])
         UC8([Charger l'exemple /<br/>nouveau document])
+        UC9([Basculer en aperçu])
+        UC10([Exporter en React ou en Vue])
+        UC11([Glisser-déposer, Monter / Descendre])
+        UC12([Télécharger le JSON Schema])
         UCV([Valider un document<br/>R1 à R8])
+        UCG([Générer le code<br/>règles déterministes])
         UCP([Enregistrer le document])
     end
-    U --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7 & UC8
+    U --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7 & UC8 & UC9 & UC10 & UC11 & UC12
+    UC10 -. "«include»" .-> UCG
     UC6 -. "«include»" .-> UCV
     UC8 -. "«include»" .-> UCV
     UC1 -. "«include»" .-> UCP
@@ -135,16 +146,36 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph racine["platforme_no_and_low_code (racine, private)"]
-        TS["typescript 7.0.2<br/>(outil partagé, devDependency)"]
+        TS["typescript 7.0.2<br/>(outil partagé)"]
         subgraph packages
-            NOYAU["@plateforme/noyau<br/>exports: ./src/index.ts<br/>dépendances de production : AUCUNE<br/>dev : vitest"]
+            NOYAU["@plateforme/noyau<br/>dépendances de production : AUCUNE"]
+            RW["@plateforme/rendu-web<br/>règles modèle → web, palette"]
+            GR["@plateforme/generateur-react"]
+            GV["@plateforme/generateur-vue"]
+            FI["@plateforme/format-imbrique<br/>à plat ↔ imbriqué (échange)"]
+            SJ["@plateforme/schema-json<br/>catalogue → JSON Schema<br/>(à plat et imbriqué)"]
         end
         subgraph apps
-            EDIT["@plateforme/editeur<br/>dépendances : react, react-dom,<br/>@plateforme/noyau (workspace:*)<br/>dev : vite, vitest, jsdom,<br/>testing-library, playwright-core, oxlint"]
+            EDIT["@plateforme/editeur<br/>react, react-dom, fflate,<br/>+ les 6 paquets ci-contre"]
         end
     end
-    EDIT -- "dépend de (lien local workspace:*)" --> NOYAU
+    RW --> NOYAU
+    GR --> RW
+    GR --> NOYAU
+    GV --> RW
+    GV --> NOYAU
+    EDIT --> NOYAU
+    EDIT --> RW
+    EDIT --> GR
+    EDIT --> GV
+    EDIT --> SJ
+    SJ --> NOYAU
+    SJ --> FI
+    FI --> NOYAU
+    EDIT --> FI
 ```
+
+Les paquets `rendu-web`, `generateur-react`, `generateur-vue`, `schema-json` et `format-imbrique` sont, comme le noyau, compilés **sans les types du navigateur** : ce sont des fonctions pures, utilisables aussi côté serveur. Leur place dans l'architecture (des **lecteurs** du modèle, qui ne passent pas par le service) est expliquée dans [phase 2 › 02 §3](../02-phase-2-generateurs-react-vue/02-conception-architecture.md).
 
 À l'intérieur du noyau :
 
@@ -271,6 +302,12 @@ classDiagram
         type = 'supprimer-noeud'
         id : NoeudId
     }
+    class DeplacerNoeud {
+        type = 'deplacer-noeud'
+        id : NoeudId
+        nouveauParentId : NoeudId
+        position? : number
+    }
     class ModifierPropriete {
         type = 'modifier-propriete'
         id : NoeudId
@@ -283,6 +320,7 @@ classDiagram
     }
     Commande <|-- AjouterNoeud
     Commande <|-- SupprimerNoeud
+    Commande <|-- DeplacerNoeud
     Commande <|-- ModifierPropriete
     Commande <|-- RemplacerDocument
 
@@ -290,6 +328,7 @@ classDiagram
         <<union discriminée par type>>
         noeud-ajoute(id, parentId)
         noeud-supprime(id)
+        noeud-deplace(id, ancienParentId, nouveauParentId)
         propriete-modifiee(id, nom)
         document-remplace
     }
@@ -382,10 +421,11 @@ classDiagram
 ```mermaid
 flowchart TB
     main["main.tsx<br/>(racine de composition)"] --> Editeur
-    Editeur["Editeur<br/>useDocument(service)<br/>état local : selectionId, erreurs"]
-    Editeur --> Palette["Palette<br/>(un bouton par DefinitionComposant)"]
+    Editeur["Editeur<br/>useDocument(service)<br/>état local : selectionId, erreurs, apercu<br/>exporter(cible) → générateurs → telecharger"]
+    Editeur --> Palette["Palette<br/>(un bouton par DefinitionComposant,<br/>cliquable et glissable)"]
+    Editeur --> GD["useGlisserDeposer<br/>(regles-depot pures)"]
     Editeur --> Arbre["Arbre → BrancheArbre (récursif)"]
-    Editeur --> Canevas["Canevas → RenduNoeud (récursif)<br/>table rendus : Texte, Bouton, Conteneur"]
+    Editeur --> Canevas["Canevas → RenduWeb (récursif)<br/>affiche l'arbre web de rendu-web<br/>modes édition / aperçu"]
     Editeur --> PP["PanneauProprietes → Champ × n<br/>(texte | ChampNombre | case | select)"]
     Editeur --> VMP["VueModelePivot<br/>état : lecture | édition(brouillon, erreurs)"]
 ```
@@ -523,6 +563,53 @@ sequenceDiagram
 
 ---
 
+### 5.5 Exporter en React *(phase 2)*
+
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant E as Editeur
+    participant G as genererProjetReact
+    participant A as arbreWeb (rendu-web)
+    participant T as telechargerZip (adaptateur)
+    U->>E: clic Exporter React
+    E->>G: genererProjetReact(document, catalogue, nom)
+    G->>A: arbreWeb(document, catalogue, inconnu erreur)
+    A-->>G: arbre web (balise, style, texte)
+    G-->>E: 7 fichiers dont src/App.jsx
+    E->>T: telecharger(application-generee-react, fichiers)
+    T-->>U: application-generee-react.zip
+```
+
+Le noyau n'est **pas** appelé : l'export ne fait que **lire** le document déjà obtenu par `useDocument`. Pour Vue, c'est le même trajet avec `genererProjetVue`.
+
+---
+
+### 5.6 Glisser un élément dans un conteneur *(phase 3)*
+
+```mermaid
+sequenceDiagram
+    actor U as Utilisateur
+    participant C as Canevas ou Arbre
+    participant H as useGlisserDeposer
+    participant R as regles-depot (pures)
+    participant S as service (noyau)
+    U->>C: glisse t1
+    C->>H: debuter(deplacer t1)
+    U->>C: survole c1
+    C->>H: survoler(c1)
+    H->>R: zoneDepot, cibleDepot, depotPermis (estDansSousArbre)
+    R-->>H: dedans c1, position 2, permis
+    U->>C: relâche
+    C->>H: deposer(c1)
+    H->>S: executer(deplacer-noeud t1 vers c1, position 2)
+    S-->>H: succès (enregistré, historique, notification)
+```
+
+Détails et diagrammes complets : [phase 3 › 02](../03-phase-3-deplacement-et-json-schema/02-conception-architecture.md).
+
+---
+
 ## 6. Diagrammes d'états
 
 ### 6.1 Le panneau « Modèle pivot (JSON) »
@@ -634,6 +721,8 @@ Stockage réel (à plat) : `noeuds = { racine, t1, c1, b1, b2 }`. L'arbre ci-des
 | **Sûreté** (aucune donnée invalide n'entre) | `validerDocument` sur toute entrée externe (`unknown`), `copierDocumentValide` | `validation.test.ts`, S5 |
 | **Prévisibilité** | Fonctions pures, documents immuables, `readonly` partout | « le document d'origine n'a pas changé » dans **chaque** test de commande |
 | **Testabilité** | Ports sortants remplacés par des doublures (`n1`, `n2`… ; stockage en mémoire) | `editeur-applicatif.test.ts` |
-| **Extensibilité** | Catalogue = données ; palette, formulaire et validation pilotés par le catalogue | Ajouter une entrée dans `composants-base.ts` |
+| **Extensibilité** | Catalogue = données ; palette, formulaire et validation pilotés par le catalogue ; une règle de rendu web par composant, partagée par le canevas et les générateurs | Ajouter une entrée dans `composants-base.ts` et une règle dans `rendu-web/src/regles.ts` (le test de complétude vérifie qu'on ne l'oublie pas) |
+| **Indépendance du code produit** *(phase 2)* | Projets générés autonomes, sans dépendance `@plateforme/*` | Recette d'export |
+| **Parité** *(phase 2)* | Règles uniques (`rendu-web`) | Recette : 7 éléments × 30 critères, React et Vue |
 | **Réactivité de l'interface** | Comparaison par référence (immuabilité) + `useSyncExternalStore` | Test « même objet tant que rien ne change » |
 | **Robustesse** | `try/catch` sur le stockage, document corrompu ignoré, parcours itératif (pas de débordement de pile) | Tests « dépôt invalide », « 50 000 niveaux » |

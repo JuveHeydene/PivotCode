@@ -1,0 +1,16 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant C as Canevas ou Arbre
+    participant H as useGlisserDeposer
+    participant R as regles-depot (pures)
+    participant S as service (noyau)
+    U->>C: glisse t1
+    C->>H: debuter(deplacer t1)
+    U->>C: survole c1
+    C->>H: survoler(c1)
+    H->>R: zoneDepot, cibleDepot, depotPermis (estDansSousArbre)
+    R-->>H: dedans c1, position 2, permis
+    U->>C: relâche
+    C->>H: deposer(c1)
+    H->>S: executer(deplacer-noeud t1 vers c1, position 2)
+    S-->>H: succès (enregistré, historique, notification)

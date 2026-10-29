@@ -1,6 +1,6 @@
 flowchart LR
     U(("👤 Concepteur<br/>(utilisateur)"))
-    subgraph Systeme["Éditeur low-code — tranche 1"]
+    subgraph Systeme["Éditeur low-code — état actuel"]
         UC1([Ajouter un composant depuis la palette])
         UC2([Sélectionner un élément<br/>canevas ou arbre])
         UC3([Modifier une propriété<br/>formulaire généré])
@@ -9,10 +9,16 @@ flowchart LR
         UC6([Éditer le modèle pivot JSON<br/>et l'appliquer])
         UC7([Annuler / rétablir])
         UC8([Charger l'exemple /<br/>nouveau document])
+        UC9([Basculer en aperçu])
+        UC10([Exporter en React ou en Vue])
+        UC11([Glisser-déposer, Monter / Descendre])
+        UC12([Télécharger le JSON Schema])
         UCV([Valider un document<br/>R1 à R8])
+        UCG([Générer le code<br/>règles déterministes])
         UCP([Enregistrer le document])
     end
-    U --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7 & UC8
+    U --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7 & UC8 & UC9 & UC10 & UC11 & UC12
+    UC10 -. "«include»" .-> UCG
     UC6 -. "«include»" .-> UCV
     UC8 -. "«include»" .-> UCV
     UC1 -. "«include»" .-> UCP

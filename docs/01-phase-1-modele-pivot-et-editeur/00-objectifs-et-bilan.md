@@ -109,4 +109,11 @@ platforme_no_and_low_code/
 
 | Élément de la phase 1 | Révisé en | Lien |
 |---|---|---|
-| *(aucune révision pour l'instant)* | | |
+| **D29** : la table de rendus `rendus` dans `Canevas.tsx` | Phase 2 (**D39**) : les règles sont déplacées dans le paquet partagé `@plateforme/rendu-web` ; le canevas ne connaît plus aucun composant | [phase 2 › 04 D39](../02-phase-2-generateurs-react-vue/04-decisions.md) |
+| Le **catalogue** de 3 composants (Texte, Bouton, Conteneur) | Phase 2 (**D35 à D38**) : 14 propriétés de mise en page et de style, toutes facultatives ; bornes `min` / `max` sur les nombres | [phase 2 › 04](../02-phase-2-generateurs-react-vue/04-decisions.md) |
+| La feuille `editeur.css` : règle générale `button { … }` | Phase 2 (**D48**) : restreinte aux boutons de l'éditeur (`button:not([data-noeud-id])`) | [phase 2 › 04 D48](../02-phase-2-generateurs-react-vue/04-decisions.md) |
+| La recette `recette/recette.mjs` : fonction `capture` | Phase 2 (**P2-07**) : attente du canevas et nouvel essai en cas d'échec | [phase 2 › 07 P2-07](../02-phase-2-generateurs-react-vue/07-journal-de-bord.md) |
+| Limite du métamodèle : « validation écrite à la main, pas de JSON Schema » ([04 §9](04-metamodele.md)) | Phase 3 (**D63 à D66**) : JSON Schema standard produit à partir du catalogue ; le noyau garde les contraintes que JSON Schema ne sait pas exprimer | [phase 3 › 03](../03-phase-3-deplacement-et-json-schema/03-json-schema-et-ses-limites.md) |
+| Réorganiser une interface : seulement supprimer et recréer | Phase 3 (**D53**) : commande `deplacer-noeud`, glisser-déposer, Monter / Descendre | [phase 3 › 04](../03-phase-3-deplacement-et-json-schema/04-decisions.md) |
+| **D8** : le format à plat, seule forme du document | **Non révisée** mais **complétée** en phase 4 (**D71**) : un format d'**échange** imbriqué s'ajoute ; le format à plat reste le format interne | [phase 4 › 02 §2](../04-phase-4-format-d-echange-imbrique/02-conception-et-theorie.md) |
+| Le panneau JSON (`VueModelePivot.tsx`) : format à plat seulement | Phase 4 (**D77**) : présentation et import « à plat » ou « imbriqué » | [phase 4 › 03 D77](../04-phase-4-format-d-echange-imbrique/03-decisions.md) |

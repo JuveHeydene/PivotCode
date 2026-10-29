@@ -10,10 +10,17 @@
     "test": "vitest run",
     "lint": "oxlint",
     "preview": "vite preview",
-    "recette": "vite build && node recette/recette.mjs"
+    "recette": "vite build && node recette/recette.mjs",
+    "recette:export": "vite build && node recette/export.mjs"
   },
   "dependencies": {
+    "@plateforme/format-imbrique": "workspace:*",
+    "@plateforme/generateur-react": "workspace:*",
+    "@plateforme/generateur-vue": "workspace:*",
     "@plateforme/noyau": "workspace:*",
+    "@plateforme/rendu-web": "workspace:*",
+    "@plateforme/schema-json": "workspace:*",
+    "fflate": "^0.8.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

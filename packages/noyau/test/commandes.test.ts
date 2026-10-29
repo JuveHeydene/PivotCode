@@ -42,7 +42,23 @@ describe('creerDocumentInitial', () => {
       versionMetamodele: 1,
       racineId: 'n1',
       noeuds: {
-        n1: { id: 'n1', composant: 'Conteneur', proprietes: { direction: 'colonne', espacement: 8 }, parentId: null, enfants: [] },
+        n1: {
+          id: 'n1',
+          composant: 'Conteneur',
+          proprietes: {
+            direction: 'colonne',
+            espacement: 8,
+            alignement: 'debut',
+            justification: 'debut',
+            margeInterne: 8,
+            fond: 'aucun',
+            bordure: false,
+            arrondi: 0,
+            marge: 0,
+          },
+          parentId: null,
+          enfants: [],
+        },
       },
     });
     expect(validerDocument(doc, catalogue)).toEqual([]);
@@ -55,7 +71,7 @@ describe('ajouter-noeud', () => {
     expect(document.noeuds['n1']).toEqual({
       id: 'n1',
       composant: 'Bouton',
-      proprietes: { libelle: 'Bouton', variante: 'principal', desactive: false },
+      proprietes: { libelle: 'Bouton', variante: 'principal', couleur: 'primaire', pleineLargeur: false, desactive: false, marge: 0 },
       parentId: 'racine',
       enfants: [],
     });
@@ -123,11 +139,84 @@ describe('supprimer-noeud', () => {
   });
 });
 
+describe('deplacer-noeud', () => {
+  // documentExemple : racine [t1, c1] ; c1 [b1, b2]
+  it('réordonne dans le même parent (descendre b1 après b2)', () => {
+    const { document, evenements } = reussi(appliquer(documentExemple, { type: 'deplacer-noeud', id: 'b1', nouveauParentId: 'c1', position: 1 }));
+    expect(document.noeuds['c1']?.enfants).toEqual(['b2', 'b1']);
+    expect(evenements).toEqual([{ type: 'noeud-deplace', id: 'b1', ancienParentId: 'c1', nouveauParentId: 'c1' }]);
+  });
+
+  it('change de parent : met à jour les deux listes d’enfants ET le parentId', () => {
+    const { document } = reussi(appliquer(documentExemple, { type: 'deplacer-noeud', id: 'b2', nouveauParentId: 'racine', position: 0 }));
+    expect(document.noeuds['c1']?.enfants).toEqual(['b1']);
+    expect(document.noeuds['racine']?.enfants).toEqual(['b2', 't1', 'c1']);
+    expect(document.noeuds['b2']?.parentId).toBe('racine');
+  });
+
+  it('sans position : à la fin du nouveau parent', () => {
+    const { document } = reussi(appliquer(documentExemple, { type: 'deplacer-noeud', id: 't1', nouveauParentId: 'c1' }));
+    expect(document.noeuds['c1']?.enfants).toEqual(['b1', 'b2', 't1']);
+  });
+
+  it('déplace un conteneur avec tout son contenu', () => {
+    const avecConteneur = reussi(appliquer(documentExemple, { type: 'ajouter-noeud', parentId: 'racine', composant: 'Conteneur' })).document;
+    const { document } = reussi(appliquer(avecConteneur, { type: 'deplacer-noeud', id: 'c1', nouveauParentId: 'n1' }));
+    expect(document.noeuds['n1']?.enfants).toEqual(['c1']);
+    expect(document.noeuds['c1']?.enfants).toEqual(['b1', 'b2']); // les enfants suivent
+  });
+
+  it('même place : renvoie LE MÊME document, sans événement', () => {
+    const { document, evenements } = reussi(appliquer(documentExemple, { type: 'deplacer-noeud', id: 'b1', nouveauParentId: 'c1', position: 0 }));
+    expect(document).toBe(documentExemple);
+    expect(evenements).toEqual([]);
+  });
+
+  it.each([
+    [-3, ['b1', 'b2']],
+    [99, ['b2', 'b1']],
+  ])('ramène une position hors limites (%d)', (position, attendu) => {
+    const r = appliquer(documentExemple, { type: 'deplacer-noeud', id: 'b1', nouveauParentId: 'c1', position });
+    expect(r.succes ? r.document.noeuds['c1']?.enfants : null).toEqual(attendu);
+  });
+
+  it.each<[string, Commande, string]>([
+    ['la racine', { type: 'deplacer-noeud', id: 'racine', nouveauParentId: 'c1' }, 'RACINE_IMMOBILE'],
+    ['dans lui-même', { type: 'deplacer-noeud', id: 'c1', nouveauParentId: 'c1' }, 'DEPLACEMENT_CYCLIQUE'],
+    ['un nœud inexistant', { type: 'deplacer-noeud', id: 'absent', nouveauParentId: 'c1' }, 'NOEUD_INTROUVABLE'],
+    ['vers un parent inexistant', { type: 'deplacer-noeud', id: 'b1', nouveauParentId: 'absent' }, 'NOEUD_INTROUVABLE'],
+    ['dans un Bouton', { type: 'deplacer-noeud', id: 't1', nouveauParentId: 'b1' }, 'ENFANTS_INTERDITS'],
+  ])('refuse de déplacer %s', (_nom, commande, code) => {
+    expect(codesErreur(appliquer(documentExemple, commande))).toEqual([code]);
+  });
+
+  it('refuse de déplacer un conteneur dans un de ses descendants (cycle)', () => {
+    const imbrique = reussi(appliquer(documentExemple, { type: 'ajouter-noeud', parentId: 'c1', composant: 'Conteneur' })).document; // n1 dans c1
+    expect(codesErreur(appliquer(imbrique, { type: 'deplacer-noeud', id: 'c1', nouveauParentId: 'n1' }))).toEqual(['DEPLACEMENT_CYCLIQUE']);
+  });
+});
+
 describe('modifier-propriete', () => {
   it('modifie une propriété', () => {
     const { document, evenements } = reussi(appliquer(documentExemple, { type: 'modifier-propriete', id: 'b1', nom: 'libelle', valeur: 'Envoyer' }));
     expect(document.noeuds['b1']?.proprietes['libelle']).toBe('Envoyer');
     expect(evenements).toEqual([{ type: 'propriete-modifiee', id: 'b1', nom: 'libelle' }]);
+  });
+
+  it('accepte les propriétés de mise en page et de style (phase 2)', () => {
+    let doc: DocumentPivot = documentExemple;
+    for (const [id, nom, valeur] of [
+      ['c1', 'alignement', 'centre'],
+      ['c1', 'justification', 'espace'],
+      ['c1', 'fond', 'clair'],
+      ['c1', 'arrondi', 12],
+      ['t1', 'gras', true],
+      ['t1', 'couleur', 'primaire'],
+      ['b2', 'pleineLargeur', true],
+    ] as const) {
+      doc = reussi(appliquer(doc, { type: 'modifier-propriete', id, nom, valeur })).document;
+    }
+    expect(doc.noeuds['c1']?.proprietes).toMatchObject({ alignement: 'centre', justification: 'espace', fond: 'clair', arrondi: 12 });
   });
 
   it('ajoute une propriété facultative absente', () => {
@@ -143,7 +232,9 @@ describe('modifier-propriete', () => {
 
   it.each<[string, Commande, string]>([
     ['nœud inexistant', { type: 'modifier-propriete', id: 'absent', nom: 'libelle', valeur: 'x' }, 'NOEUD_INTROUVABLE'],
-    ['propriété inconnue', { type: 'modifier-propriete', id: 'b1', nom: 'couleur', valeur: 'rouge' }, 'PROPRIETE_INCONNUE'],
+    ['propriété inconnue', { type: 'modifier-propriete', id: 'b1', nom: 'clignotement', valeur: true }, 'PROPRIETE_INCONNUE'],
+    ['nombre sous le minimum', { type: 'modifier-propriete', id: 'c1', nom: 'margeInterne', valeur: -4 }, 'PROPRIETE_TYPE_INVALIDE'],
+    ['couleur hors palette', { type: 'modifier-propriete', id: 't1', nom: 'couleur', valeur: 'rose' }, 'PROPRIETE_CHOIX_INVALIDE'],
     ['mauvais type', { type: 'modifier-propriete', id: 'c1', nom: 'espacement', valeur: '8' }, 'PROPRIETE_TYPE_INVALIDE'],
     ['nombre non fini', { type: 'modifier-propriete', id: 'c1', nom: 'espacement', valeur: Number.NaN }, 'PROPRIETE_TYPE_INVALIDE'],
     ['choix non permis', { type: 'modifier-propriete', id: 'b1', nom: 'variante', valeur: 'danger' }, 'PROPRIETE_CHOIX_INVALIDE'],

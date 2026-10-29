@@ -1,0 +1,53 @@
+flowchart LR
+    subgraph EDITEUR["apps/editeur/src"]
+        main["main.tsx"]
+        Ed["Editeur.tsx"]
+        Pal["composants/Palette.tsx"]
+        Arb["composants/Arbre.tsx"]
+        Can["composants/Canevas.tsx"]
+        PP["composants/PanneauProprietes.tsx"]
+        VMP["composants/VueModelePivot.tsx"]
+        out["outils-editeur.ts"]
+        hook["adaptateurs/use-document.ts"]
+        uuid["adaptateurs/generateur-uuid.ts"]
+        ls["adaptateurs/depot-local-storage.ts"]
+        tel["adaptateurs/telechargement.ts"]
+        gd["glisser-deposer/ (regles-depot + hook)"]
+    end
+    subgraph LECTEURS["packages : lecteurs du modèle"]
+        rw["rendu-web : arbreWeb, regles"]
+        gr["generateur-react"]
+        gv["generateur-vue"]
+        sj["schema-json"]
+        fi["format-imbrique"]
+    end
+    subgraph NOYAU["packages/noyau/src"]
+        idx["index.ts"]
+        EA["application/editeur-applicatif.ts"]
+        cmd["domaine/commandes.ts"]
+        val["domaine/validation.ts"]
+        comp["domaine/composant.ts"]
+        init["domaine/document-initial.ts"]
+        nd["domaine/noeud.ts"]
+    end
+    main --> Ed & uuid & ls & idx
+    Can --> rw
+    Ed -- "exporter" --> gr & gv
+    Ed --> tel
+    gr & gv --> rw
+    rw -- "types, catalogue" --> idx
+    Ed --> gd
+    gd -- "service.executer (via Editeur)" --> idx
+    Ed -- "JSON Schema" --> sj
+    sj -- "catalogue" --> idx
+    Ed --> hook & Pal & Arb & Can & PP & VMP & out
+    VMP -- "service.executer" --> idx
+    VMP -- "versImbrique / depuisImbrique" --> fi
+    fi -- "validerDocument" --> idx
+    sj --> fi
+    Ed -- "service.executer / annuler" --> idx
+    hook -- "service.abonner / lireDocument" --> idx
+    idx --> EA
+    EA --> cmd & val & init
+    cmd --> val & comp & nd
+    val --> comp & nd

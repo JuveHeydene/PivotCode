@@ -1,0 +1,6 @@
+flowchart LR
+    E["Document reçu<br/>(IA, autre outil, JSON collé)"] --> S{"JSON Schema<br/>forme locale :<br/>R1, R2 forme, R4, R5, R6"}
+    S -- refusé --> X1["Erreur de forme<br/>(lisible par n'importe quel outil)"]
+    S -- accepté --> N{"Noyau<br/>intégrité et structure :<br/>clé = id, R3, R7, R8"}
+    N -- refusé --> X2["Erreur de structure"]
+    N -- accepté --> OK["Document accepté"]

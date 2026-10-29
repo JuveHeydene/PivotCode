@@ -1,11 +1,11 @@
 # Visite guidée du code actuel
 
 > 🟢 **Document de RÉFÉRENCE : il décrit l'état ACTUEL du système.**
-> Dernière mise à jour : **21/10/2026, état à la fin de la phase 1**. Il est mis à jour à la fin de chaque phase.
-> La version figée de la phase 1 se trouve dans [10-visite-guidee-du-code.md](../01-phase-1-modele-pivot-et-editeur/10-visite-guidee-du-code.md) ; comparer les deux montre l'évolution.
+> Dernière mise à jour : **29/10/2026, état à la fin de la phase 4**. Il est mis à jour à la fin de chaque phase.
+> Versions figées : [phase 1 › 10](../01-phase-1-modele-pivot-et-editeur/10-visite-guidee-du-code.md), [phase 2 › 09](../02-phase-2-generateurs-react-vue/09-visite-guidee-du-code.md), [phase 3 › 09](../03-phase-3-deplacement-et-json-schema/09-visite-guidee-du-code.md) ; comparer montre l'évolution.
 
 > Lis ce document **avec le code ouvert à côté**. Les chemins sont relatifs à la racine du dépôt.
-> Ordre conseillé : le noyau du centre vers l'extérieur (domaine → application), puis l'éditeur de l'extérieur vers l'intérieur (`main.tsx` → `Editeur.tsx` → composants).
+> Ordre conseillé : le noyau du centre vers l'extérieur (domaine → application), puis les règles de rendu et les générateurs (Partie 1 bis), puis l'éditeur de l'extérieur vers l'intérieur (`main.tsx` → `Editeur.tsx` → composants).
 
 ---
 
@@ -22,13 +22,13 @@
 
 | Fichier | Contenu | À retenir |
 |---|---|---|
-| `noeud.ts` | `NoeudId`, `ValeurPropriete`, `Noeud`, `DocumentPivot` (tout en `readonly`) ; `trouverNoeud()` | **Le métamodèle structurel.** `trouverNoeud` est l'unique façon sûre de chercher un nœud (`Object.hasOwn`) |
+| `noeud.ts` | `NoeudId`, `ValeurPropriete`, `Noeud`, `DocumentPivot` (tout en `readonly`) ; `trouverNoeud()` ; `estDansSousArbre()` *(phase 3, O(profondeur))* | **Le métamodèle structurel.** `trouverNoeud` est l'unique façon sûre de chercher un nœud (`Object.hasOwn`) |
 | `composant.ts` | `DefinitionPropriete` (union de 4 variantes), `DefinitionComposant`, classe `Catalogue` (2 `Map`), `verifierValeur()`, `valeursParDefaut()` | **Le métamodèle du vocabulaire.** `verifierValeur` est utilisée **à la fois** par la validation (R5) et par la commande `modifier-propriete` : une seule définition de « valeur correcte » |
 | `composants-base.ts` | Le tableau `composantsDeBase` : Texte, Bouton, Conteneur | Ajouter un composant = ajouter une entrée ici |
 | `erreur.ts` | `CodeErreur` (16 codes), `ErreurModele`, fabrique `erreur()` | La fabrique omet `noeudId` quand il n'y en a pas : les tests comparent des objets exacts |
 | `validation.ts` | Gardes de type, `validerDocument()` (R1 à R8), `copierDocumentValide()` | Lis-le **dans l'ordre** : chaque bloc correspond à une règle, commentée `// R1 — …` |
 | `document-initial.ts` | `COMPOSANT_RACINE`, `creerDocumentInitial()` | Le document de départ : une racine Conteneur avec ses valeurs par défaut |
-| `commandes.ts` | Types `Commande`, `Evenement`, `ResultatCommande` ; `appliquerCommande()` (un `switch`) ; une fonction par commande | Chaque fonction : **1.** vérifier les préconditions → `echec(...)` ; **2.** construire le nouveau document par copies superficielles ; **3.** renvoyer les événements |
+| `commandes.ts` | Types `Commande`, `Evenement`, `ResultatCommande` ; `appliquerCommande()` (un `switch`) ; une fonction par commande, dont `deplacerNoeud` *(phase 3)* | Chaque fonction : **1.** vérifier les préconditions → `echec(...)` ; **2.** construire le nouveau document par copies superficielles ; **3.** renvoyer les événements |
 
 ### Application (`src/application/`) — le cœur vu de l'extérieur
 
@@ -73,6 +73,29 @@ Elle exporte les **types** (avec `export type`, à cause de `verbatimModuleSynta
 
 ---
 
+## Partie 1 bis — Règles de rendu et générateurs *(phase 2)*
+
+| Paquet / fichier | Rôle |
+|---|---|
+| `packages/rendu-web/src/regles.ts` | **La table de règles** « composant → élément web » (balise, styles, texte, désactivé) ; classe `Lecteur` (valeur du nœud, sinon défaut du catalogue) ; tables `TAILLES`, `ALIGNEMENT`, `JUSTIFICATION` |
+| `packages/rendu-web/src/arbre-web.ts` | `arbreWeb(document, catalogue, { inconnu })` : tout le document en arbre web ; `ErreurRendu` |
+| `packages/rendu-web/src/palette.ts` | `PALETTE`, `POLICE`, `CSS_DE_BASE` |
+| `packages/rendu-web/src/css.ts` | `versNomCss`, `styleEnLigne`, `nomDePaquet`, `echapperHtml` |
+| `packages/rendu-web/src/document-demonstration.ts` | Le document de démonstration |
+| `packages/generateur-react/src/jsx.ts` | Imprimeur JSX : `chaineJs`, `texteJsx` (échappement), `lignesJsx` |
+| `packages/generateur-react/src/generer.ts` | `genererApp` (App.jsx), `genererProjetReact` (7 fichiers), `VERSIONS_REACT` |
+| `packages/generateur-vue/src/template.ts` | Imprimeur de template : `texteVue` (entités et accolades), `lignesTemplate` (texte collé aux balises) |
+| `packages/generateur-vue/src/generer.ts` | `genererApp` (App.vue), `genererProjetVue`, `VERSIONS_VUE` |
+
+| `packages/schema-json/src/generer-schema.ts` *(phase 3, complété en phase 4)* | `genererSchemaJson(catalogue)` : le catalogue traduit en JSON Schema 2020-12 ; `genererSchemaImbrique(catalogue)` : le schéma **récursif** du format imbriqué ; `schemaProprietes`, partagé par les deux |
+| `packages/schema-json/schema/document-pivot.v1.schema.json` | Le schéma publié du format à plat (vérifié à jour par un test) |
+| `packages/schema-json/schema/document-imbrique.v1.schema.json` *(phase 4)* | Le schéma publié du format imbriqué (idem) |
+| `packages/format-imbrique/src/format-imbrique.ts` *(phase 4)* | `versImbrique(document, { ids? })` ; `depuisImbrique(candidat, catalogue)` (parcours avec pile, identifiants, construction, puis `validerDocument`, erreurs avec chemin) ; `estFormatImbrique` ; `FORMAT_IMBRIQUE` |
+
+Ces paquets sont des **fonctions pures**, compilées sans les types du navigateur. Un export complet suivi à travers ce code : [phase 2 › 09 §3](../02-phase-2-generateurs-react-vue/09-visite-guidee-du-code.md).
+
+---
+
 ## Partie 2 — L'éditeur (`apps/editeur/`)
 
 ### Configuration
@@ -92,15 +115,19 @@ Elle exporte les **types** (avec `export type`, à cause de `verbatimModuleSynta
 | `src/adaptateurs/generateur-uuid.ts` | `crypto.randomUUID()` derrière le port | Adaptateur |
 | `src/adaptateurs/depot-local-storage.ts` | `localStorage` derrière le port, avec `try/catch` en lecture et en écriture | Adaptateur |
 | `src/adaptateurs/use-document.ts` | Hook React : `useSyncExternalStore(abonner, lireDocument)` | Adaptateur (Observateur → React) |
-| `src/Editeur.tsx` | Mise en page, état local (sélection, erreurs), fonction `executer` (affiche les erreurs), `ajouter` (palette → sélection du nouveau nœud), raccourcis clavier, boutons de la barre | Adaptateur entrant |
+| `src/Editeur.tsx` | Mise en page ; état local (sélection, erreurs, `apercu`) ; `Catalogue` construit depuis `lireCatalogue()` ; `executer` (affiche les erreurs) ; `ajouter` (palette → sélection du nouveau nœud) ; `exporter(cible)` (générateur → `telecharger`) ; raccourcis clavier ; barre : annuler, rétablir, exemple, nouveau, démo, export | Adaptateur entrant |
+| `src/adaptateurs/telechargement.ts` | `creerZip` (fonction pure, `fflate`, date fixe), `telechargerZip` et `telechargerFichier` (Blob + lien de téléchargement). Injectés dans `Editeur` par les props `telecharger` et `telechargerUnFichier` | Adaptateur sortant |
+| `src/glisser-deposer/regles-depot.ts` *(phase 3)* | Fonctions **pures** du glisser-déposer : `zoneDepot`, `axeDesEnfants`, `cibleDepot`, `depotPermis` | Noyau fonctionnel |
+| `src/glisser-deposer/use-glisser-deposer.ts` *(phase 3)* | Hook : lit les événements `dragstart`, `dragover` et `drop`, tient l'état (`glisse`, `survol`), envoie `ajouter-noeud` ou `deplacer-noeud` | Adaptateur entrant (coquille impérative) |
 | `src/outils-editeur.ts` | Fonctions **pures** de l'éditeur : `indexerCatalogue`, `cibleAjout`, `resume`, `documentVide`, `documentExemple` | — |
 | `src/composants/Palette.tsx` | Un bouton par définition du catalogue | Interface pilotée par les métadonnées |
 | `src/composants/Arbre.tsx` | `BrancheArbre` récursif ; `aria-current` sur la sélection | Composite |
-| `src/composants/Canevas.tsx` | Table `rendus` + `RenduNoeud` récursif ; `stopPropagation` ; clic sur le fond = désélection | Interprète, Stratégie, Composite |
+| `src/composants/Canevas.tsx` | Affiche l'**arbre web** de `rendu-web` avec `createElement` (composant récursif `RenduWeb`) ; ne connaît aucun nom de composant. Mode **édition** (sélection, `stopPropagation`, repères, `aria-disabled`) ou **aperçu** (rendu exact, vrai `disabled`) | Interprète, Composite |
 | `src/composants/PanneauProprietes.tsx` | `Champ` choisit le contrôle selon le type ; `ChampNombre` avec brouillon | Interface pilotée par les métadonnées |
-| `src/composants/VueModelePivot.tsx` | État `lecture` / `édition` (union discriminée) ; `JSON.parse` dans un `try/catch` ; commande `remplacer-document` ; liste des erreurs avec lien « voir » | — |
-| `src/editeur.css` | Grille à 3 colonnes (`grid-template-areas`), styles du canevas (conteneurs en pointillés, contour de sélection) | — |
-| `recette/recette.mjs` | Recette Chrome (voir [phase 1 › 09](../01-phase-1-modele-pivot-et-editeur/09-tests-et-recette.md)) | — |
+| `src/composants/VueModelePivot.tsx` | État `lecture` / `édition` (union discriminée) ; présentation « À plat / Imbriqué » et ⤓ *(phase 4)* ; `JSON.parse` dans un `try/catch` ; un document imbriqué est d'abord converti par `depuisImbrique` ; commande `remplacer-document` ; liste des erreurs avec lien « voir » | — |
+| `src/editeur.css` | Grille à 3 colonnes ; repères d'édition du canevas ; règles des boutons limitées à `button:not([data-noeud-id])`, pour ne pas toucher le canevas | — |
+| `recette/recette.mjs` | Recette Chrome de la phase 1 (voir [phase 1 › 09](../01-phase-1-modele-pivot-et-editeur/09-tests-et-recette.md)) | — |
+| `recette/export.mjs` | Recette d'**export et de parité** (voir [phase 2 › 08](../02-phase-2-generateurs-react-vue/08-tests-et-recette.md)) | — |
 
 ---
 
@@ -142,5 +169,6 @@ Et si l'utilisateur avait collé ce même changement dans le JSON ? Les étapes 
        { nom: 'largeur', libelle: 'Largeur (px)', type: 'nombre', defaut: 200, obligatoire: false } ] }
    ```
    → La **palette** affiche « + Image », le **panneau** affiche « Adresse » et « Largeur », la **validation** accepte et vérifie les nœuds Image, l'**arbre** affiche l'adresse. Tout cela **sans autre modification**.
-2. Dans `Canevas.tsx`, ajouter une entrée `Image: ({ noeud, attributs }) => <img {...attributs} src=… width=… />` à la table `rendus`. C'est le seul endroit qui sait **à quoi ressemble** une image.
+2. Dans `packages/rendu-web/src/regles.ts`, ajouter une règle `Image: (l) => ({ balise: 'img', … })`, et `'img'` au type `Balise`. C'est le **seul** endroit qui sait **à quoi ressemble** une image. Le canevas **et** les deux générateurs en profitent d'un coup. Il faut aussi traiter `<img>` comme un élément vide dans les deux imprimeurs.
 3. Le **noyau** ne change pas (seulement ses **données**), et le **métamodèle structurel** non plus.
+4. Si l'étape 2 est oubliée, le **test de complétude** de `rendu-web` échoue.

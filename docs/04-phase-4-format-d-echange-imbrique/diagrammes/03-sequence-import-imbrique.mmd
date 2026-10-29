@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant V as VueModelePivot
+    participant F as format-imbrique
+    participant N as noyau (validerDocument)
+    participant S as EditeurApplicatif
+    U->>V: colle un document imbriqué, « Appliquer »
+    V->>V: JSON.parse(brouillon)
+    V->>F: estFormatImbrique(valeur) ?
+    F-->>V: vrai (champ format)
+    V->>F: depuisImbrique(valeur, catalogue)
+    F->>F: 1. parcours avec une pile (forme, objets partagés)
+    F->>F: 2. identifiants uniques, puis fabrication n1, n2 et suivants
+    F->>F: 3. construction du document à plat
+    F->>N: 4. validerDocument(document)
+    N-->>F: erreurs R1 à R8 (ou aucune)
+    alt refusé
+        F-->>V: erreurs, avec le chemin racine.enfants[i]
+        V-->>U: liste des erreurs, le document ne change pas
+    else accepté
+        F-->>V: document à plat
+        V->>S: executer(remplacer-document)
+        S->>N: validation (deuxième fois, D9)
+        S-->>V: succès, abonnés prévenus
+        V-->>U: canevas, arbre et JSON mis à jour (annulable)
+    end

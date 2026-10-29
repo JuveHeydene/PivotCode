@@ -1,8 +1,9 @@
 flowchart TB
     main["main.tsx<br/>(racine de composition)"] --> Editeur
-    Editeur["Editeur<br/>useDocument(service)<br/>état local : selectionId, erreurs"]
-    Editeur --> Palette["Palette<br/>(un bouton par DefinitionComposant)"]
+    Editeur["Editeur<br/>useDocument(service)<br/>état local : selectionId, erreurs, apercu<br/>exporter(cible) → générateurs → telecharger"]
+    Editeur --> Palette["Palette<br/>(un bouton par DefinitionComposant,<br/>cliquable et glissable)"]
+    Editeur --> GD["useGlisserDeposer<br/>(regles-depot pures)"]
     Editeur --> Arbre["Arbre → BrancheArbre (récursif)"]
-    Editeur --> Canevas["Canevas → RenduNoeud (récursif)<br/>table rendus : Texte, Bouton, Conteneur"]
+    Editeur --> Canevas["Canevas → RenduWeb (récursif)<br/>affiche l'arbre web de rendu-web<br/>modes édition / aperçu"]
     Editeur --> PP["PanneauProprietes → Champ × n<br/>(texte | ChampNombre | case | select)"]
     Editeur --> VMP["VueModelePivot<br/>état : lecture | édition(brouillon, erreurs)"]

@@ -1,0 +1,17 @@
+// Les TESTS peuvent utiliser Node.js (lecture du fichier publié) ;
+// le code source (src/), lui, reste compilé sans Node ni navigateur (décision D5).
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022"
+    ]
+  },
+  "include": [
+    "src",
+    "test"
+  ]
+}

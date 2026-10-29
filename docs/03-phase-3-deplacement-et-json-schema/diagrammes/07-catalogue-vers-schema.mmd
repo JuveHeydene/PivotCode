@@ -1,0 +1,8 @@
+flowchart LR
+    CAT["Catalogue (M2, format maison)<br/>composants-base.ts"] --> GEN["genererSchemaJson()<br/>@plateforme/schema-json"]
+    GEN --> SCH["document-pivot.v1.schema.json<br/>(standard draft 2020-12)"]
+    SCH --> T1["Test : fichier publié à jour"]
+    SCH --> T2["Ajv : documents valides / invalides"]
+    SCH --> T3["fast-check : cohérence avec le noyau"]
+    SCH --> BTN["Éditeur : bouton JSON Schema"]
+    SCH -. "plus tard" .-> IA["IA : sorties structurées"]

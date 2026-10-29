@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant E as Editeur
+    participant C as Canevas
+    participant A as arbreWeb (rendu-web)
+    participant R as regles
+    participant Cat as Catalogue
+    E->>C: document, catalogue, apercu
+    C->>A: arbreWeb(document, catalogue, inconnu remplacer)
+    loop pour chaque noeud, depuis la racine
+        A->>R: decrireNoeud(noeud, catalogue)
+        R->>Cat: trouverPropriete(composant, nom) si la valeur est absente
+        R-->>A: ElementWeb (balise, style, texte)
+    end
+    A-->>C: NoeudWeb (arbre complet)
+    C->>C: createElement(balise, style, texte, enfants), récursivement
+    Note over C: en édition, ajoute la sélection et les repères. En aperçu, rien.

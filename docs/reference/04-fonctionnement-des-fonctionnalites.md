@@ -1,7 +1,7 @@
 # Fonctionnement des fonctionnalités, de l'écran jusqu'au code
 
 > 🟢 **Document de RÉFÉRENCE : il décrit l'état ACTUEL du système.**
-> Dernière mise à jour : **21/10/2026, état à la fin de la phase 1**.
+> Dernière mise à jour : **29/10/2026, état à la fin de la phase 4**.
 >
 > Pour **chaque fonctionnalité** :
 > 1. **ce que voit l'utilisateur** ;
@@ -28,7 +28,13 @@
 | [F9](#f9--la-validation-le-garde-fou) | La validation (le garde-fou) | — |
 | [F10](#f10--la-persistance) | La persistance | — |
 | [F11](#f11--annuler--rétablir) | Annuler / rétablir | — |
-| [F12](#f12--charger-lexemple--nouveau-document) | Charger l'exemple / nouveau document | — |
+| [F12](#f12--charger-lexemple--nouveau-document) | Charger l'exemple / nouveau document / la démo | — |
+| [F13](#f13--le-mode-aperçu) | Le mode aperçu *(phase 2)* | modèle → écran |
+| [F14](#f14--exporter-en-react-ou-en-vue) | Exporter en React ou en Vue *(phase 2)* | modèle → code |
+| [F15](#f15--déplacer-un-élément--monter--descendre) | Déplacer un élément ; Monter / Descendre *(phase 3)* | éditeur → modèle |
+| [F16](#f16--le-glisser-déposer) | Le glisser-déposer *(phase 3)* | éditeur → modèle |
+| [F17](#f17--le-json-schema-du-métamodèle) | Le JSON Schema du métamodèle *(phase 3)* | métamodèle → standard |
+| [F18](#f18--le-format-déchange-imbriqué) | Le format d'échange imbriqué *(phase 4)* | modèle ↔ extérieur |
 
 ---
 
@@ -48,6 +54,15 @@ flowchart LR
         hook["adaptateurs/use-document.ts"]
         uuid["adaptateurs/generateur-uuid.ts"]
         ls["adaptateurs/depot-local-storage.ts"]
+        tel["adaptateurs/telechargement.ts"]
+        gd["glisser-deposer/ (regles-depot + hook)"]
+    end
+    subgraph LECTEURS["packages : lecteurs du modèle"]
+        rw["rendu-web : arbreWeb, regles"]
+        gr["generateur-react"]
+        gv["generateur-vue"]
+        sj["schema-json"]
+        fi["format-imbrique"]
     end
     subgraph NOYAU["packages/noyau/src"]
         idx["index.ts"]
@@ -59,8 +74,20 @@ flowchart LR
         nd["domaine/noeud.ts"]
     end
     main --> Ed & uuid & ls & idx
+    Can --> rw
+    Ed -- "exporter" --> gr & gv
+    Ed --> tel
+    gr & gv --> rw
+    rw -- "types, catalogue" --> idx
+    Ed --> gd
+    gd -- "service.executer (via Editeur)" --> idx
+    Ed -- "JSON Schema" --> sj
+    sj -- "catalogue" --> idx
     Ed --> hook & Pal & Arb & Can & PP & VMP & out
     VMP -- "service.executer" --> idx
+    VMP -- "versImbrique / depuisImbrique" --> fi
+    fi -- "validerDocument" --> idx
+    sj --> fi
     Ed -- "service.executer / annuler" --> idx
     hook -- "service.abonner / lireDocument" --> idx
     idx --> EA
@@ -69,7 +96,7 @@ flowchart LR
     val --> comp & nd
 ```
 
-**À retenir** : l'éditeur ne parle au noyau que par `index.ts`, et en pratique seulement par l'objet `service` (le port `ServiceEditeur`). Aucun fichier de l'éditeur n'importe `commandes.ts` ou `validation.ts` directement.
+**À retenir** : l'éditeur ne parle au noyau que par `index.ts`, et en pratique seulement par l'objet `service` (le port `ServiceEditeur`). Aucun fichier de l'éditeur n'importe `commandes.ts` ou `validation.ts` directement. Les **lecteurs** du modèle (`rendu-web` et les générateurs) n'utilisent que les **types** et le **catalogue** : ils ne modifient jamais rien.
 
 ---
 
@@ -154,42 +181,50 @@ const document = useDocument(service);
 
 ## F3 — Le rendu du canevas (l'interprète)
 
-**Ce que voit l'utilisateur** : l'interface conçue (`<p>`, `<button>`, conteneurs en flex), cliquable.
+**Ce que voit l'utilisateur** : l'interface conçue (`<p>`, `<button>`, conteneurs en flex), avec ses styles (couleurs, alignements, marges…), cliquable en mode édition.
 
-**Le code**, dans `apps/editeur/src/composants/Canevas.tsx`. Un composant **récursif** parcourt l'arbre depuis la racine :
+**Depuis la phase 2, deux étapes** :
+
+**1. Le modèle devient un arbre web** (`packages/rendu-web`) : c'est le **même** code que pour les générateurs.
+
+```ts
+const arbre = arbreWeb(document, catalogue, { inconnu: 'remplacer' });
+// arbre = { id: 'page', balise: 'div', style: { display: 'flex', … }, enfants: [ { balise: 'p', texte: '…', … }, … ] }
+```
+
+Pour chaque nœud, `decrireNoeud` choisit la **règle** de son composant dans une table (patron Stratégie). Le `Lecteur` donne la valeur de chaque propriété : celle du nœud, sinon le défaut du **catalogue**.
+
+| Composant | Balise | Styles produits (extraits) |
+|---|---|---|
+| `Texte` | `<p>` | `fontSize` (taille), `fontWeight` (gras), `color` (palette), `textAlign`, `margin` |
+| `Bouton` | `<button>` | `backgroundColor` / `color` / `border` selon `variante` et `couleur` ; `opacity` et `cursor` si désactivé ; `width: 100%` si pleine largeur |
+| `Conteneur` | `<div>` | `display: flex`, `flexDirection`, `gap`, `alignItems`, `justifyContent`, `padding`, `margin`, `backgroundColor`, `border`, `borderRadius` |
+
+**2. Le canevas affiche cet arbre** (`apps/editeur/src/composants/Canevas.tsx`), sans connaître aucun composant :
 
 ```tsx
-function RenduNoeud({ document, id, selectionId, onSelectionner }) {
-  const noeud = trouverNoeud(document, id);              // accès O(1) dans la table à plat
-  if (noeud === undefined) return null;
-  const attributs = {
-    'data-noeud-id': id,                                 // permet aux tests de retrouver l'élément
-    className: `apercu${id === selectionId ? ' selectionne' : ''}`,
-    onClick: (e) => { e.stopPropagation(); onSelectionner(id); },
-  };
-  const enfants = noeud.enfants.map((enfantId) =>        // récursion : chaque enfant, DANS L'ORDRE
-    <RenduNoeud key={enfantId} document={document} id={enfantId} … />);
-  const rendu = rendus[noeud.composant];                 // patron Stratégie : table composant → rendu
-  if (rendu === undefined) return <div …>Composant inconnu : {noeud.composant}</div>;
-  return rendu({ noeud, enfants, attributs });
+function RenduWeb({ noeud, selectionId, onSelectionner, apercu }) {
+  const attributs = { 'data-noeud-id': noeud.id, style: noeud.style };
+  if (noeud.balise === 'button') attributs.type = 'button';
+  if (apercu) {
+    if (noeud.desactive) attributs.disabled = true;          // rendu exact
+  } else {
+    if (noeud.desactive) attributs['aria-disabled'] = true;  // reste sélectionnable (D29)
+    attributs.className = `apercu apercu-${noeud.balise}${noeud.id === selectionId ? ' selectionne' : ''}`;
+    attributs.onClick = (e) => { e.stopPropagation(); onSelectionner(noeud.id); };
+  }
+  const enfants = noeud.enfants.map((enfant) => <RenduWeb key={enfant.id} noeud={enfant} … />);
+  return createElement(noeud.balise, attributs, noeud.texte, ...enfants);
 }
 ```
 
-La table `rendus` traduit chaque composant en HTML :
-
-| Composant | Rendu | Propriétés utilisées |
-|---|---|---|
-| `Texte` | `<p>` | `contenu` ; `taille` → `font-size` (0,85 / 1 / 1,6 rem) |
-| `Bouton` | `<button>` | `libelle` ; `variante` → classe CSS ; `desactive` → `aria-disabled` + style atténué |
-| `Conteneur` | `<div>` en `display: flex` | `direction` → `flex-direction: column / row` ; `espacement` → `gap` en px ; les enfants à l'intérieur |
-
 **Détails importants** :
-- `key={enfantId}` : React identifie chaque enfant par son **identifiant stable**. Quand on insère un nœud au milieu, React ne recrée pas les autres.
-- `e.stopPropagation()` : sans lui, un clic sur un Bouton **remonterait** jusqu'au Conteneur parent, puis jusqu'à la racine, et la sélection finirait toujours sur la racine.
-- Le clic sur le **fond** du canevas (`<div className="canevas" onClick={() => onSelectionner(null)}>`) désélectionne.
-- Pas d'attribut HTML `disabled` sur les boutons : un bouton `disabled` ne reçoit plus les clics, on ne pourrait plus le sélectionner (D29).
+- `key={enfant.id}` : React identifie chaque enfant par son **identifiant stable**. Quand on insère un nœud au milieu, React ne recrée pas les autres.
+- `e.stopPropagation()` : sans lui, un clic sur un Bouton **remonterait** jusqu'à la racine, et la sélection finirait toujours sur la racine.
+- Les règles CSS des boutons de l'**éditeur** ne s'appliquent pas aux éléments du canevas (`button:not([data-noeud-id])`, D48) : tout leur style vient des règles.
+- Un composant sans règle donne un encadré « Composant inconnu », au lieu de faire planter l'éditeur (D46).
 
-**Tests** : « un conteneur en ligne est rendu en flex « row » » ; les scénarios S1 à S4 vérifient le texte affiché dans le canevas.
+**Tests** : « le canevas applique les nouvelles propriétés » ; « un conteneur en ligne est rendu en flex row » ; `rendu-web.test.ts` (17 tests) ; parité mesurée par la recette d'export.
 
 ---
 
@@ -332,7 +367,7 @@ const noeuds = {
 
 ## F8 — Éditer le modèle pivot en JSON
 
-**Ce que voit l'utilisateur** : il clique sur « Modifier » et le JSON devient éditable. « Appliquer » met à jour le canevas et l'arbre, ou affiche des erreurs. « Abandonner » revient sans rien changer.
+**Ce que voit l'utilisateur** : il clique sur « Modifier » et le JSON devient éditable. « Appliquer » met à jour le canevas et l'arbre, ou affiche des erreurs. « Abandonner » revient sans rien changer. Depuis la phase 4, le JSON peut être présenté et collé **à plat** ou **imbriqué** (F18).
 
 **Le composant** (`composants/VueModelePivot.tsx`) a deux états, décrits par une **union discriminée** :
 
@@ -452,17 +487,161 @@ Rétablir       :  passe.push(courant) ; courant = futur.pop()
 
 ## F12 — Charger l'exemple / nouveau document
 
-**Ce que voit l'utilisateur** : deux boutons de la barre du haut, pratiques pour une démonstration.
+**Ce que voit l'utilisateur** : trois boutons de la barre du haut, pratiques pour une démonstration : « Charger l'exemple », « Nouveau document » et, depuis la phase 2, « Charger la démo ».
 
 **Le code** (`Editeur.tsx`) : les deux passent par **la même commande** que l'édition du JSON :
 
 ```tsx
 executer({ type: 'remplacer-document', document: documentExemple })                 // le document de l'étape 2
 executer({ type: 'remplacer-document', document: documentVide(index, nouvelId()) }) // une racine Conteneur seule
+executer({ type: 'remplacer-document', document: documentDemonstration })           // phase 2 : toutes les propriétés de style
 ```
+
+`documentDemonstration` vient du paquet `rendu-web`. C'est le même document que celui des tests des générateurs et de la recette de parité (D52).
 
 `documentExemple` et `documentVide` sont dans `outils-editeur.ts`. `documentVide` construit les valeurs par défaut **à partir du catalogue**, et utilise la constante `COMPOSANT_RACINE` exportée par le noyau : le nom du composant racine n'est écrit qu'à un seul endroit.
 
 Comme ces boutons passent par une commande, ils sont **validés**, **enregistrés** et **annulables**.
 
 **Tests** : « « Nouveau document » et « Charger l'exemple » passent par la commande remplacer-document ».
+
+---
+
+## F13 — Le mode aperçu
+
+**Ce que voit l'utilisateur** : il clique sur « 👁 Aperçu » au-dessus du canevas. Les pointillés et les contours disparaissent ; on voit **exactement** ce que donnera l'application exportée. Un nouveau clic sur « ✎ Revenir à l'édition » restaure les repères.
+
+**Le code** : un simple état `apercu` dans `Editeur.tsx`, passé au `Canevas`. En aperçu, `RenduWeb` n'ajoute **ni classe, ni gestionnaire de clic**, et un bouton désactivé reçoit le vrai attribut `disabled`, comme dans le code généré (voir F3).
+
+**Pourquoi** : c'est l'état que la recette compare aux applications générées (parité). C'est aussi utile au concepteur, pour juger le résultat sans les repères d'édition.
+
+**Tests** : « le mode aperçu retire les repères d'édition et désactive vraiment les boutons ».
+
+---
+
+## F14 — Exporter en React ou en Vue
+
+**Ce que voit l'utilisateur** : il clique sur « ⤓ Exporter React » (ou Vue) et reçoit `application-generee-react.zip`. Après décompression, `npm install` puis `npm run dev` lancent une application qui affiche **le même rendu** que le canevas.
+
+**Chemin** : `Editeur.exporter` → `genererProjetReact` → `arbreWeb` (rendu-web) → `lignesJsx` → 7 fichiers → `telecharger` → `creerZip` → téléchargement.
+
+**1. L'éditeur** (`Editeur.tsx`) :
+```ts
+function exporter(cible: 'react' | 'vue') {
+  let fichiers;
+  try {
+    fichiers = cible === 'react'
+      ? genererProjetReact(document, catalogue, { nom: 'Application générée' })
+      : genererProjetVue(document, catalogue, { nom: 'Application générée' });
+  } catch (e) {
+    setErreurExport(e.message);       // EXPORT_IMPOSSIBLE : par exemple, un composant sans règle
+    return;
+  }
+  telecharger(`application-generee-${cible}`, fichiers);   // adaptateur injecté (D49)
+}
+```
+
+**2. Le générateur** (`packages/generateur-react/src/generer.ts`) : `arbreWeb(…, { inconnu: 'erreur' })`, puis `lignesJsx(arbre, 2)`, qui écrit le JSX :
+- une balise sur une ligne si elle tient en 100 caractères, sinon un attribut par ligne ;
+- les styles sous la forme `style={{ fontSize: '1.6rem', … }}` ;
+- un texte contenant `{ } < > &` sous la forme d'une expression `{"…"}`.
+
+Le générateur assemble ensuite `package.json` (versions fixées), `index.html`, `vite.config.js`, `src/main.jsx`, `src/App.jsx`, `src/index.css` (= `CSS_DE_BASE`) et `README.md`.
+Pour Vue : `lignesTemplate`, styles `style="font-size: 1.6rem; …"`, texte échappé en entités HTML (accolades comprises) et **collé** aux balises.
+
+**3. Le zip** (`adaptateurs/telechargement.ts`) : `creerZip` range chaque fichier sous `application-generee-react/…`, avec une **date fixe** (même modèle ⇒ même zip). `telechargerZip` crée un `Blob`, une URL temporaire et un lien `<a download>`, puis le clique.
+
+**Le noyau n'est pas appelé** : l'export ne fait que **lire** le document déjà obtenu. Il ne le modifie jamais.
+
+**Garanties** : déterministe, complet (test de complétude), sûr (échappement), fidèle (parité mesurée sur 7 éléments × 30 critères). Théorie : [phase 2 › 03](../02-phase-2-generateurs-react-vue/03-transformation-modele-vers-code.md).
+
+**Tests** : `generateur-react.test.ts` (18), `generateur-vue.test.ts` (14), `telechargement.test.ts` (2), tests « Exporter React / Vue » de l'éditeur, recette `pnpm recette:export`.
+
+---
+
+## F15 — Déplacer un élément ; Monter / Descendre
+
+**Ce que voit l'utilisateur** : il sélectionne un élément, puis clique sur « ↑ Monter » ou « ↓ Descendre » : l'élément échange sa place avec son voisin. Les boutons sont grisés pour le premier ou le dernier élément, et pour la racine.
+
+**La commande** (noyau, `commandes.ts` → `deplacerNoeud`) : `{ type: 'deplacer-noeud', id, nouveauParentId, position? }`.
+1. Vérifications : le nœud existe et n'est pas la racine (`RACINE_IMMOBILE`) ; le nouveau parent existe et accepte des enfants ; **pas de cycle** (`DEPLACEMENT_CYCLIQUE`).
+2. **Contrôle de cycle** : `estDansSousArbre(document, id, nouveauParentId)` **remonte** les `parentId` depuis le nouveau parent. Coût **O(profondeur)**, grâce à la double liaison de la phase 1.
+3. La position est comptée **sans** le nœud. Ainsi « Monter » = `rang − 1` et « Descendre » = `rang + 1` (`Editeur.tsx` → `deplacerDe`).
+4. Même place : **même** document, aucun événement. Sinon : nouveau document (ancien parent, nouveau parent, `parentId` du nœud), et événement `noeud-deplace`.
+
+**Annuler** fonctionne sans aucun code supplémentaire : c'est une commande comme les autres (F11).
+
+**Tests** : 13 tests de `deplacer-noeud` ; tests par propriétés (574 déplacements acceptés, 149 cycles refusés) ; « Descendre puis Monter » (interface et Chrome).
+
+---
+
+## F16 — Le glisser-déposer
+
+**Ce que voit l'utilisateur** : il glisse un bouton de la **palette** (pour créer), ou un élément du **canevas** ou de l'**arbre** (pour déplacer). Pendant le glissement, une **ligne** bleue indique « avant » ou « après », et un **contour en pointillés** indique « dedans ». Rien ne s'affiche si le dépôt est interdit.
+
+**Deux couches** (`apps/editeur/src/glisser-deposer/`) :
+
+1. **Règles pures** (`regles-depot.ts`) :
+   - `axeDesEnfants` : vertical si le parent est en colonne, horizontal s'il est en ligne (toujours vertical dans l'arbre) ;
+   - `zoneDepot(rect, souris, axe, accepteEnfants)` : pour un conteneur, bords = avant / après, milieu = dedans ; pour un élément simple, moitiés ;
+   - `cibleDepot(document, cible, zone, idDeplace)` donne `{ parentId, position }`, avec une position comptée **sans** l'élément déplacé (comme F15). Avant ou après la racine devient « dedans » ;
+   - `depotPermis` : le parent accepte des enfants, et il n'y a pas de cycle (`estDansSousArbre`).
+2. **Le hook** (`use-glisser-deposer.ts`), branché sur les événements HTML5 :
+   - `dragstart` mémorise **ce qui est glissé** dans l'état React. Le navigateur cache `dataTransfer` pendant le survol ; on y écrit quand même un texte pour Firefox ;
+   - `dragover` appelle les règles. Si le dépôt est permis, `preventDefault()` et indication ; sinon, rien, et le curseur affiche « interdit » ;
+   - `drop` envoie `ajouter-noeud` (depuis la palette) ou `deplacer-noeud`, puis sélectionne l'élément.
+
+**Double protection** : même si l'interface laissait passer un dépôt cyclique, le noyau le refuserait.
+
+**Où c'est désactivé** : en mode **aperçu**, et pour la **racine**, qui peut recevoir mais pas être déplacée.
+
+**Tests** : 15 tests des règles pures ; 7 tests d'interface ; 6 scénarios dans un vrai Chrome (P3-1 à P3-6). Détails : [phase 3 › 02 §4](../03-phase-3-deplacement-et-json-schema/02-conception-architecture.md).
+
+---
+
+## F17 — Le JSON Schema du métamodèle
+
+**Ce que voit l'utilisateur** : le bouton « ⤓ JSON Schema » télécharge `document-pivot.v1.schema.json`.
+
+**Le code** : `genererSchemaJson(catalogue)` (`packages/schema-json/src/generer-schema.ts`) traduit le catalogue en JSON Schema *draft 2020-12* :
+
+| Catalogue | JSON Schema |
+|---|---|
+| `texte` | `"type": "string"` |
+| `nombre`, `min` / `max` | `"type": "number"`, `"minimum"` / `"maximum"` |
+| `booleen` | `"type": "boolean"` |
+| `choix` | `"enum": [...]` |
+| `obligatoire` | `"required"` |
+| `accepteEnfants: false` | `"enfants": { "maxItems": 0 }` |
+| un composant | une définition `$defs`, avec `"composant": { "const": … }` |
+
+Le téléchargement passe par l'adaptateur injecté `telechargerUnFichier` (comme l'export). Le même schéma est **publié** dans `packages/schema-json/schema/`, et un test vérifie qu'il est à jour.
+
+**Ce que le schéma ne vérifie pas** : clé = id, racine existante, liens cohérents, arbre sans cycle. Ces contraintes ne sont pas exprimables en JSON Schema ; le noyau les vérifie (voir [02-metamodele.md §7 bis](02-metamodele.md)).
+
+**Tests** : 21 tests du schéma, dont 6 limites ; cohérence avec le noyau sur 1 000 documents aléatoires (0 contradiction) ; test du bouton dans l'éditeur.
+
+---
+
+## F18 — Le format d'échange imbriqué
+
+**Ce que voit l'utilisateur** : au-dessus du JSON, deux boutons accolés, « À plat » et « Imbriqué ». « Imbriqué » montre le même document en poupées russes : chaque conteneur contient ses enfants, sans `parentId` ni `racineId`. ⤓ télécharge le JSON **affiché** (`interface.pivot.json` ou `interface.imbrique.json`). « Modifier » ouvre le brouillon dans le format affiché, et « Appliquer » accepte **les deux** formats. Un document imbriqué collé peut même ne contenir **aucun** identifiant.
+
+**Le code** (`composants/VueModelePivot.tsx`) :
+
+```ts
+const json = JSON.stringify(format === 'plat' ? document : versImbrique(document), null, 2);
+// …
+if (estFormatImbrique(valeur)) {                       // champ format === "pivot-imbrique"
+  const conversion = depuisImbrique(valeur, catalogue);  // pile, identifiants, construction, validerDocument
+  if (!conversion.succes) { /* afficher les erreurs, avec leur chemin */ return; }
+  valeur = conversion.document;
+}
+service.executer({ type: 'remplacer-document', document: valeur }); // le noyau revalide ; annulable
+```
+
+**Ce que fait l'import** (`packages/format-imbrique`) : il parcourt l'arbre avec une pile, vérifie la forme de chaque nœud, refuse un identifiant en double ou un objet partagé, fabrique `n1`, `n2`… pour les nœuds sans identifiant, calcule `parentId` et `enfants`, puis appelle `validerDocument`. Les messages d'erreur indiquent le **chemin** du nœud, par exemple `(racine.enfants[1].enfants[0])`.
+
+**Pourquoi** : le format imbriqué n'a pas de référence entre nœuds. Liens cassés, cycles et orphelins y sont donc impossibles, et son JSON Schema (`document-imbrique.v1.schema.json`) vérifie tout sauf l'unicité des identifiants. Voir [02-metamodele.md §7 ter](02-metamodele.md).
+
+**Tests** : 24 tests du paquet (dont l'aller-retour exact sur 300 documents aléatoires et un arbre de 50 000 niveaux) ; 14 tests du schéma imbriqué (dont la cohérence sur 1 000 corruptions, 0 contradiction) ; 4 tests d'interface ; recette Chrome P4-1 à P4-3. Détails : [phase 4](../04-phase-4-format-d-echange-imbrique/00-objectifs-et-bilan.md).

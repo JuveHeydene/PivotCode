@@ -1,0 +1,17 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant P as Palette
+    participant H as useGlisserDeposer
+    participant R as regles-depot (pures)
+    participant S as service (noyau)
+    U->>P: commence à glisser « + Texte »
+    P->>H: debuter(nouveau Texte)
+    H->>H: glisse = nouveau Texte
+    U->>H: survole le conteneur c1 (dragover)
+    H->>R: zoneDepot, puis cibleDepot, puis depotPermis
+    R-->>H: dedans c1, position 2, permis
+    H->>H: survol = c1 dedans, donc classe depot-dedans
+    U->>H: relâche (drop)
+    H->>S: executer(ajouter-noeud, parentId c1, composant Texte, position 2)
+    S-->>H: succès, événement noeud-ajoute
+    H->>H: sélectionne le nouveau nœud, efface glisse et survol

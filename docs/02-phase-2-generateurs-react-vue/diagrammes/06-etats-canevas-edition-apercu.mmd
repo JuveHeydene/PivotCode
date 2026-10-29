@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Edition
+    Edition: Édition<br/>repères en pointillés, sélection au clic,<br/>bouton désactivé = aria-disabled
+    Apercu: Aperçu<br/>rendu exact, aucune décoration,<br/>bouton désactivé = disabled
+    Edition --> Apercu: clic « Aperçu »
+    Apercu --> Edition: clic « Revenir à l’édition »

@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph packages
+        NOYAU["@plateforme/noyau<br/>métamodèle, catalogue, validation,<br/>commandes, service<br/>(inchangé dans sa structure)"]
+        RW["@plateforme/rendu-web  NOUVEAU<br/>règles composant → élément web,<br/>palette, CSS de base, arbreWeb()"]
+        GR["@plateforme/generateur-react  NOUVEAU<br/>arbre web → JSX + projet Vite"]
+        GV["@plateforme/generateur-vue  NOUVEAU<br/>arbre web → template + projet Vite"]
+    end
+    subgraph apps
+        ED["@plateforme/editeur<br/>React + Vite<br/>(+ fflate pour le zip)"]
+    end
+    RW --> NOYAU
+    GR --> RW
+    GR --> NOYAU
+    GV --> RW
+    GV --> NOYAU
+    ED --> NOYAU
+    ED --> RW
+    ED --> GR
+    ED --> GV

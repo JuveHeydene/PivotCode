@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Lecture
+    Lecture: Lecture<br/>(le JSON suit le document en direct,<br/>présenté « à plat » ou « imbriqué »)
+    Edition: Édition<br/>(brouillon local, ne suit plus le document)
+    Lecture --> Lecture: « À plat » / « Imbriqué » / changer de présentation
+    Lecture --> Lecture: « ⤓ » / télécharger le JSON affiché
+    Lecture --> Edition: « Modifier » / brouillon = JSON affiché
+    Edition --> Edition: frappe / brouillon modifié
+    Edition --> Edition: « Appliquer » [syntaxe invalide] / afficher l'erreur de syntaxe
+    Edition --> Edition: « Appliquer » [imbriqué mal formé] / afficher les erreurs, avec le chemin
+    Edition --> Edition: « Appliquer » [refusé par le métamodèle] / afficher les erreurs R1…R8
+    Edition --> Lecture: « Appliquer » [accepté] / (convertir si imbriqué) puis remplacer-document
+    Edition --> Lecture: « Abandonner » / brouillon jeté

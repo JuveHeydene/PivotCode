@@ -1,98 +1,79 @@
-// Le canevas est un INTERPRÈTE du modèle pivot : il parcourt l'arbre depuis la
-// racine et, pour chaque nœud, choisit quoi afficher selon son composant.
-// Les rendus sont rangés dans une table composant → fonction (patron Stratégie) :
-// ajouter un composant = ajouter une entrée dans `rendus`.
-import type { CSSProperties, MouseEvent, ReactNode } from 'react';
-import { trouverNoeud } from '@plateforme/noyau';
-import type { DocumentPivot, Noeud, NoeudId } from '@plateforme/noyau';
-
-type ProprietesRendu = {
-  noeud: Noeud;
-  enfants: ReactNode;
-  attributs: {
-    'data-noeud-id': NoeudId;
-    className: string;
-    onClick: (e: MouseEvent) => void;
-  };
-};
-
-function texte(noeud: Noeud, nom: string, defaut: string): string {
-  const v = noeud.proprietes[nom];
-  return typeof v === 'string' ? v : defaut;
-}
-
-const taillesPolice: Record<string, string> = { petit: '0.85rem', moyen: '1rem', grand: '1.6rem' };
-
-const rendus: Record<string, (p: ProprietesRendu) => ReactNode> = {
-  Texte: ({ noeud, attributs }) => (
-    <p {...attributs} style={{ fontSize: taillesPolice[texte(noeud, 'taille', 'moyen')] ?? '1rem' }}>
-      {texte(noeud, 'contenu', '')}
-    </p>
-  ),
-  Bouton: ({ noeud, attributs }) => {
-    const desactive = noeud.proprietes['desactive'] === true;
-    // Pas d'attribut HTML `disabled` : un bouton désactivé ne reçoit plus les
-    // clics, on ne pourrait donc plus le sélectionner dans le canevas.
-    return (
-      <button
-        type="button"
-        {...attributs}
-        className={`${attributs.className} apercu-bouton ${texte(noeud, 'variante', 'principal')}${desactive ? ' desactive' : ''}`}
-        aria-disabled={desactive}
-      >
-        {texte(noeud, 'libelle', '')}
-      </button>
-    );
-  },
-  Conteneur: ({ noeud, enfants, attributs }) => {
-    const espacement = noeud.proprietes['espacement'];
-    const style: CSSProperties = {
-      flexDirection: noeud.proprietes['direction'] === 'ligne' ? 'row' : 'column',
-      gap: typeof espacement === 'number' ? `${espacement}px` : undefined,
-    };
-    return (
-      <div {...attributs} className={`${attributs.className} apercu-conteneur`} style={style}>
-        {enfants}
-      </div>
-    );
-  },
-};
+// Le canevas AFFICHE l'arbre web produit par @plateforme/rendu-web : les mêmes
+// règles que celles des générateurs React et Vue. Il ne connaît aucun nom de
+// composant : il crée simplement l'élément HTML décrit (balise, style, texte).
+//
+// Deux modes :
+// - édition : chaque élément est cliquable (sélection), avec des repères visuels ;
+// - aperçu  : le rendu exact, sans aucune décoration, comme dans l'application exportée.
+import { createElement } from 'react';
+import type { CSSProperties, DragEvent, MouseEvent } from 'react';
+import type { Catalogue, DocumentPivot, NoeudId } from '@plateforme/noyau';
+import { arbreWeb } from '@plateforme/rendu-web';
+import type { NoeudWeb } from '@plateforme/rendu-web';
+import type { GestionGlisser } from '../glisser-deposer/use-glisser-deposer';
 
 type Props = {
   document: DocumentPivot;
+  catalogue: Catalogue;
   selectionId: NoeudId | null;
   onSelectionner: (id: NoeudId | null) => void;
+  apercu: boolean;
+  glisser?: GestionGlisser;
 };
 
-export function Canevas({ document, selectionId, onSelectionner }: Props) {
+export function Canevas({ document, catalogue, selectionId, onSelectionner, apercu, glisser }: Props) {
+  const arbre = arbreWeb(document, catalogue, { inconnu: 'remplacer' });
   return (
-    <div className="canevas" onClick={() => onSelectionner(null)}>
-      <RenduNoeud document={document} id={document.racineId} selectionId={selectionId} onSelectionner={onSelectionner} />
+    <div
+      className={`canevas${apercu ? ' mode-apercu' : ''}`}
+      data-testid="canevas"
+      onClick={apercu ? undefined : () => onSelectionner(null)}
+    >
+      <RenduWeb noeud={arbre} selectionId={selectionId} onSelectionner={onSelectionner} apercu={apercu} glisser={glisser} estRacine />
     </div>
   );
 }
 
-function RenduNoeud({ document, id, selectionId, onSelectionner }: Props & { id: NoeudId }) {
-  const noeud = trouverNoeud(document, id);
-  if (noeud === undefined) return null;
-  const attributs = {
-    'data-noeud-id': id,
-    className: `apercu${id === selectionId ? ' selectionne' : ''}`,
-    onClick: (e: MouseEvent) => {
-      e.stopPropagation(); // sinon le clic remonterait et sélectionnerait le parent
-      onSelectionner(id);
-    },
+type PropsRendu = {
+  noeud: NoeudWeb;
+  selectionId: NoeudId | null;
+  onSelectionner: (id: NoeudId | null) => void;
+  apercu: boolean;
+  glisser?: GestionGlisser | undefined;
+  estRacine?: boolean;
+};
+
+function RenduWeb({ noeud, selectionId, onSelectionner, apercu, glisser, estRacine = false }: PropsRendu) {
+  const attributs: Record<string, unknown> = {
+    'data-noeud-id': noeud.id,
+    style: noeud.style as CSSProperties,
   };
-  const enfants = noeud.enfants.map((enfantId) => (
-    <RenduNoeud key={enfantId} document={document} id={enfantId} selectionId={selectionId} onSelectionner={onSelectionner} />
-  ));
-  const rendu = rendus[noeud.composant];
-  if (rendu === undefined) {
-    return (
-      <div {...attributs} className={`${attributs.className} apercu-inconnu`}>
-        Composant inconnu : {noeud.composant}
-      </div>
-    );
+  if (noeud.balise === 'button') attributs['type'] = 'button';
+  if (apercu) {
+    // Rendu exact : un bouton désactivé l'est vraiment, comme dans le code généré.
+    if (noeud.desactive) attributs['disabled'] = true;
+  } else {
+    // Édition : pas d'attribut `disabled`, sinon le bouton ne recevrait plus le
+    // clic et ne pourrait plus être sélectionné (décision D29).
+    if (noeud.desactive) attributs['aria-disabled'] = true;
+    const indication = glisser?.indication(noeud.id, 'canevas');
+    attributs['className'] = `apercu apercu-${noeud.balise}${noeud.id === selectionId ? ' selectionne' : ''}${indication ? ` ${indication}` : ''}`;
+    attributs['onClick'] = (e: MouseEvent) => {
+      e.stopPropagation(); // sinon le clic remonterait et sélectionnerait le parent
+      onSelectionner(noeud.id);
+    };
+    if (glisser !== undefined) {
+      // Glisser-déposer (édition seulement). La racine peut recevoir, pas partir.
+      attributs['draggable'] = !estRacine;
+      attributs['onDragStart'] = (e: DragEvent) => glisser.debuter({ type: 'deplacer', id: noeud.id }, e);
+      attributs['onDragOver'] = (e: DragEvent) => glisser.survoler(noeud.id, 'canevas', e);
+      attributs['onDragLeave'] = () => glisser.quitter(noeud.id);
+      attributs['onDrop'] = (e: DragEvent) => glisser.deposer(noeud.id, 'canevas', e);
+      attributs['onDragEnd'] = glisser.terminer;
+    }
   }
-  return rendu({ noeud, enfants, attributs });
+  const enfants = noeud.enfants.map((enfant) => (
+    <RenduWeb key={enfant.id} noeud={enfant} selectionId={selectionId} onSelectionner={onSelectionner} apercu={apercu} glisser={glisser} />
+  ));
+  return createElement(noeud.balise, attributs, noeud.texte, ...enfants);
 }

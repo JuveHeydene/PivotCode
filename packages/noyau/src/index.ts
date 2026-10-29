@@ -3,10 +3,10 @@
 // le port entrant ServiceEditeur.
 
 export type { NoeudId, ValeurPropriete, Noeud, DocumentPivot } from './domaine/noeud';
-export { trouverNoeud } from './domaine/noeud';
+export { estDansSousArbre, trouverNoeud } from './domaine/noeud';
 export type { TypePropriete, DefinitionPropriete, DefinitionComposant } from './domaine/composant';
 export { Catalogue } from './domaine/composant';
-export { composantsDeBase } from './domaine/composants-base';
+export { composantsDeBase, COULEURS } from './domaine/composants-base';
 export type { CodeErreur, ErreurModele } from './domaine/erreur';
 export { validerDocument } from './domaine/validation';
 export { COMPOSANT_RACINE } from './domaine/document-initial';

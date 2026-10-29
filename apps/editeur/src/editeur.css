@@ -30,7 +30,9 @@ textarea {
   font: inherit;
 }
 
-button {
+/* Les boutons DE L'ÉDITEUR seulement : ceux du canevas portent data-noeud-id et
+   reçoivent tout leur style des règles de rendu (parité avec le code exporté). */
+button:not([data-noeud-id]) {
   cursor: pointer;
   border: 1px solid var(--bordure);
   background: var(--surface);
@@ -38,27 +40,27 @@ button {
   padding: 4px 10px;
 }
 
-button:hover:not(:disabled) {
+button:not([data-noeud-id]):hover:not(:disabled) {
   border-color: var(--accent);
 }
 
-button:disabled {
+button:not([data-noeud-id]):disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-button.principal {
+button:not([data-noeud-id]).principal {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
 
-button.danger {
+button:not([data-noeud-id]).danger {
   color: var(--danger);
   border-color: var(--danger);
 }
 
-button.lien {
+button:not([data-noeud-id]).lien {
   border: none;
   background: none;
   color: var(--accent);
@@ -108,10 +110,28 @@ code {
   border-bottom: 1px solid var(--bordure);
 }
 
+.barre h1 {
+  white-space: nowrap;
+}
+
 .barre-actions {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.barre-actions button {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+}
+
+.separateur {
+  width: 1px;
+  align-self: stretch;
+  background: var(--bordure);
+  margin: 0 4px;
 }
 
 .messages {
@@ -199,6 +219,18 @@ code {
   overflow: auto;
 }
 
+.centre h2 {
+  margin: 0;
+}
+
+.entete-canevas {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Repères d'ÉDITION uniquement (absents en mode aperçu et dans le code exporté) */
 .apercu {
   cursor: pointer;
   outline-offset: 2px;
@@ -212,37 +244,42 @@ code {
   outline: 2px solid var(--accent);
 }
 
-p.apercu {
-  margin: 0;
-}
-
-.apercu-conteneur {
-  display: flex;
-  align-items: flex-start;
+/* Un conteneur vide doit rester visible et cliquable */
+.apercu-div {
   min-height: 48px;
-  padding: 8px;
   border: 1px dashed var(--bordure);
-  border-radius: 6px;
 }
 
-.apercu-bouton.principal {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+.mode-apercu {
+  border-style: solid;
 }
 
-.apercu-bouton.secondaire {
-  background: var(--surface);
-  color: var(--accent);
-  border-color: var(--accent);
+/* --- Glisser-déposer : où l'élément va tomber --- */
+
+[draggable='true'] {
+  cursor: grab;
 }
 
-.apercu-bouton.desactive {
-  opacity: 0.45;
+.depot-avant-v {
+  box-shadow: 0 -3px 0 0 var(--accent);
 }
 
-.apercu-inconnu {
-  color: var(--danger);
+.depot-apres-v {
+  box-shadow: 0 3px 0 0 var(--accent);
+}
+
+.depot-avant-h {
+  box-shadow: -3px 0 0 0 var(--accent);
+}
+
+.depot-apres-h {
+  box-shadow: 3px 0 0 0 var(--accent);
+}
+
+/* « Dedans » : un voile coloré par-dessus le fond (même si le fond est un style en ligne) */
+.depot-dedans {
+  box-shadow: inset 0 0 0 9999px rgba(47, 111, 222, 0.12);
+  outline: 2px dashed var(--accent);
 }
 
 /* --- Panneau de propriétés --- */
@@ -279,8 +316,10 @@ p.apercu {
   justify-self: start;
 }
 
-.proprietes .danger {
-  align-self: flex-start;
+.proprietes-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
   margin-top: 4px;
 }
 
@@ -310,6 +349,37 @@ p.apercu {
   display: flex;
   gap: 6px;
   align-items: center;
+  white-space: nowrap;
+}
+
+/* Quatre commandes et un compteur sur une seule ligne, même dans un panneau étroit */
+.modele-pivot-actions button:not([data-noeud-id]) {
+  padding: 3px 8px;
+  font-size: 0.85rem;
+}
+
+/* Choix « À plat / Imbriqué » : deux boutons accolés, l'actif en couleur d'accent */
+.choix-format {
+  display: inline-flex;
+}
+
+.choix-format button:not([data-noeud-id]) {
+  border-radius: 0;
+}
+
+.choix-format button:not([data-noeud-id]):first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.choix-format button:not([data-noeud-id]):last-child {
+  border-radius: 0 6px 6px 0;
+  margin-left: -1px;
+}
+
+.choix-format button:not([data-noeud-id])[aria-pressed='true'] {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .modele-pivot .taille {

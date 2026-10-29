@@ -2,22 +2,33 @@
 // - mode lecture : suit le document en direct (sens éditeur → modèle) ;
 // - mode édition : brouillon local, appliqué par la commande
 //   `remplacer-document` (sens modèle → éditeur), validée par le noyau.
+// Deux présentations (phase 4) : « à plat » (le format interne) ou « imbriquée »
+// (le format d'échange). Le brouillon peut être collé dans l'un ou l'autre format.
 import { useState } from 'react';
-import type { DocumentPivot, ErreurModele, NoeudId, ServiceEditeur } from '@plateforme/noyau';
+import { depuisImbrique, estFormatImbrique, versImbrique } from '@plateforme/format-imbrique';
+import type { Catalogue, DocumentPivot, ErreurModele, NoeudId, ServiceEditeur } from '@plateforme/noyau';
+import type { TelechargerFichier } from '../adaptateurs/telechargement';
 
 type Props = {
   document: DocumentPivot;
   service: ServiceEditeur;
+  catalogue: Catalogue;
   onSelectionner: (id: NoeudId) => void;
+  telechargerUnFichier: TelechargerFichier;
 };
+
+type Format = 'plat' | 'imbrique';
 
 type Etat =
   | { mode: 'lecture' }
   | { mode: 'edition'; brouillon: string; erreurSyntaxe: string | null; erreurs: readonly ErreurModele[] };
 
-export function VueModelePivot({ document, service, onSelectionner }: Props) {
+const FICHIERS: Record<Format, string> = { plat: 'interface.pivot.json', imbrique: 'interface.imbrique.json' };
+
+export function VueModelePivot({ document, service, catalogue, onSelectionner, telechargerUnFichier }: Props) {
   const [etat, setEtat] = useState<Etat>({ mode: 'lecture' });
-  const json = JSON.stringify(document, null, 2);
+  const [format, setFormat] = useState<Format>('plat');
+  const json = JSON.stringify(format === 'plat' ? document : versImbrique(document), null, 2);
 
   if (etat.mode === 'lecture') {
     return (
@@ -25,6 +36,26 @@ export function VueModelePivot({ document, service, onSelectionner }: Props) {
         <div className="modele-pivot-actions">
           <button type="button" onClick={() => setEtat({ mode: 'edition', brouillon: json, erreurSyntaxe: null, erreurs: [] })}>
             Modifier
+          </button>
+          <div className="choix-format" role="group" aria-label="Présentation du JSON">
+            {(['plat', 'imbrique'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={format === f}
+                title={f === 'plat' ? 'Format interne : un annuaire identifiant → nœud' : 'Format d’échange : chaque nœud contient ses enfants'}
+                onClick={() => setFormat(f)}
+              >
+                {f === 'plat' ? 'À plat' : 'Imbriqué'}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            title={`Télécharger ${FICHIERS[format]}`}
+            aria-label={`Télécharger ${FICHIERS[format]}`}
+            onClick={() => telechargerUnFichier(FICHIERS[format], `${json}\n`, 'application/json')}>
+            ⤓
           </button>
           <span className="taille">{Object.keys(document.noeuds).length} nœud(s)</span>
         </div>
@@ -40,6 +71,15 @@ export function VueModelePivot({ document, service, onSelectionner }: Props) {
     } catch (e) {
       setEtat({ mode: 'edition', brouillon, erreurSyntaxe: e instanceof Error ? e.message : String(e), erreurs: [] });
       return;
+    }
+    // Un document imbriqué est d'abord converti (et entièrement validé) ; le noyau revalide ensuite.
+    if (estFormatImbrique(valeur)) {
+      const conversion = depuisImbrique(valeur, catalogue);
+      if (!conversion.succes) {
+        setEtat({ mode: 'edition', brouillon, erreurSyntaxe: null, erreurs: conversion.erreurs });
+        return;
+      }
+      valeur = conversion.document;
     }
     const resultat = service.executer({ type: 'remplacer-document', document: valeur });
     if (resultat.succes) setEtat({ mode: 'lecture' });

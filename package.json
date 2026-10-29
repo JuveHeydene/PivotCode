@@ -8,7 +8,8 @@
     "typecheck": "pnpm -r typecheck",
     "dev": "pnpm --filter @plateforme/editeur dev",
     "build": "pnpm --filter @plateforme/editeur build",
-    "recette": "pnpm --filter @plateforme/editeur recette"
+    "recette": "pnpm --filter @plateforme/editeur recette",
+    "recette:export": "pnpm --filter @plateforme/editeur recette:export"
   },
   "keywords": [],
   "author": "",

@@ -1,7 +1,7 @@
 # Le métamodèle actuel : niveaux, conformité et subtilités
 
 > 🟢 **Document de RÉFÉRENCE : il décrit l'état ACTUEL du système.**
-> Dernière mise à jour : **21/10/2026, état à la fin de la phase 1**. Il est mis à jour à la fin de chaque phase.
+> Dernière mise à jour : **29/10/2026, état à la fin de la phase 4**. Il est mis à jour à la fin de chaque phase.
 > La version figée de la phase 1 se trouve dans [04-metamodele.md](../01-phase-1-modele-pivot-et-editeur/04-metamodele.md) ; comparer les deux montre l'évolution.
 
 > Ce document explique **ce qu'est un métamodèle**, **où il se trouve dans le code**, et toutes les subtilités qui apparaissent dès qu'on l'implémente. C'est probablement la partie la plus « théorique » de la soutenance : prends le temps de bien la comprendre.
@@ -75,6 +75,18 @@ Elle ne parle **pas** de « Bouton » : pour elle, un nœud est un nœud.
 
 Ce sont des **données**, pas des types TypeScript. Le compilateur ne sait pas qu'un Bouton a un libellé : **c'est la validation qui le vérifie, à l'exécution**.
 
+**État actuel du vocabulaire** (après la phase 2) :
+
+| Composant | Propriétés |
+|---|---|
+| **Texte** | `contenu` (obligatoire), `taille`, `couleur`, `gras`, `alignementTexte`, `marge` |
+| **Bouton** | `libelle` (obligatoire), `variante`, `couleur`, `pleineLargeur`, `desactive`, `marge` |
+| **Conteneur** | `direction`, `espacement`, `alignement`, `justification`, `margeInterne`, `fond`, `bordure`, `arrondi`, `marge` |
+
+Les couleurs sont des **noms** d'une palette fixe (`primaire`, `secondaire`, `succes`, `danger`, `neutre`, `gris`, `clair`, `blanc`). Le modèle ne contient jamais de valeur CSS (D36).
+
+**Démonstration du principe** : la phase 2 a ajouté 14 propriétés **sans changer la structure** ni `versionMetamodele`. Les documents de la phase 1 restent valides, et une propriété absente prend la valeur par défaut du catalogue (D37, D40).
+
 ### 3.3 Typage linguistique et typage ontologique
 
 Cette séparation porte un nom dans la recherche (Atkinson & Kühne, *Model-Driven Development: A Metamodeling Foundation*, IEEE Software, 2003). Un nœud a **deux types en même temps** :
@@ -130,6 +142,7 @@ Un métamodèle, ce n'est pas seulement une structure : ce sont aussi des **cont
 2. **Pourquoi s'arrêter après R1 et R2 ?** Si la forme est fausse, les règles suivantes liraient des champs absents. Après R1, elles planteraient. Après R2, elles produiraient des **erreurs en cascade** trompeuses : un nœud mal formé ferait apparaître tous ses voisins comme « incohérents ». Après R3, en revanche, on continue : R4 à R7 restent utiles même sans racine valide. Seul R8 a besoin de la racine (voir D16).
 3. **« Obligatoire » veut dire « présent », pas « non vide ».** Un libellé `""` est accepté. Sinon, quand l'utilisateur efface tout le champ pour retaper un texte, la commande serait refusée et le champ « résisterait » à la saisie (voir D20).
 4. **Un nombre doit être fini.** `NaN` et `Infinity` sont refusés, car `JSON.stringify(NaN)` donne `null`. Le document deviendrait invalide après un simple aller-retour par le stockage. C'est une contrainte imposée par le **format de sérialisation** (M3 = JSON) au métamodèle (M2).
+   **Bornes** *(phase 2)* : `DefinitionPropriete` de type `nombre` accepte `min` et `max` : une marge ou un arrondi ne peuvent pas être négatifs. C'est la seule évolution du **type** `DefinitionPropriete` depuis la phase 1 (D38). Elle enrichit le langage qui décrit le vocabulaire, pas la structure des documents.
 5. **`parentId: null` et non un champ absent.** JSON ne connaît pas `undefined` : `JSON.stringify({ a: undefined })` donne `"{}"`. Avec `null`, la racine reste **explicitement** sans parent après sérialisation.
 6. **Les clés héritées de JavaScript.** Un objet JS hérite de `toString`, `constructor`, `__proto__`… Un document dont `racineId` vaut `"toString"` passerait un test naïf `noeuds[racineId] !== undefined`. Toute recherche passe donc par `Object.hasOwn` (fonction `trouverNoeud`), ou par des `Map` construites à partir des entrées. C'est testé.
 
@@ -172,31 +185,61 @@ Le champ `versionMetamodele` est typé par le **littéral** `1`, et non par `num
 
 ---
 
+## 7 bis. Le métamodèle au format standard : JSON Schema *(phase 3)*
+
+Le catalogue (notre format maison) est **traduit automatiquement** en un **JSON Schema** standard (*draft 2020-12*) : `packages/schema-json/schema/document-pivot.v1.schema.json`, téléchargeable depuis l'éditeur.
+
+| Règle | Où elle est vérifiée |
+|---|---|
+| Forme (R1, R2), composant connu (R4), propriétés (R5), enfants interdits (R6) | **JSON Schema** et noyau |
+| Clé = id, racine existante (R3), liens cohérents (R7), arbre sans cycle (R8) | **Noyau seulement** : contraintes **référentielles** et **globales**, que JSON Schema ne sait pas exprimer |
+
+La validation se fait donc en **deux couches**. Leur cohérence est vérifiée sur 1 000 documents aléatoires, sans aucune contradiction. Une différence est **voulue** : un champ structurel en trop est refusé par le schéma (forme canonique) mais toléré, puis retiré, par le noyau (principe de robustesse). Théorie complète : [phase 3 › 03](../03-phase-3-deplacement-et-json-schema/03-json-schema-et-ses-limites.md).
+
+---
+
+## 7 ter. Deux formes pour le même modèle : à plat et imbriqué *(phase 4)*
+
+Le **même** document M1 peut s'écrire de deux façons. Ce sont deux **sérialisations** du même métamodèle (même `versionMetamodele: 1`), pas deux métamodèles.
+
+| | **À plat** (format interne, D8) | **Imbriqué** (format d'échange, D71) |
+|---|---|---|
+| Lien parent → enfant | Une **référence** : identifiant dans `enfants`, `parentId` | La **position** : l'enfant est écrit dans son parent |
+| Champs propres | `racineId`, `noeuds: { id → nœud }`, `parentId` | `format: "pivot-imbrique"`, `racine`, `enfants` (nœuds) |
+| Identifiants | Obligatoires | **Facultatifs** ; fabriqués `n1`, `n2`… à l'import (D72) |
+| Sert à | Éditer : O(1), modifications locales, historique, glisser-déposer | Échanger : humains, outils, IA |
+| Règles non exprimables en JSON Schema | Clé = id, R3, R7, R8 | **Seulement** l'unicité des `id` (et aucune s'ils sont omis) |
+| Schéma publié | `document-pivot.v1.schema.json` | `document-imbrique.v1.schema.json` (récursif) |
+
+Conversions : `versImbrique` et `depuisImbrique` (`@plateforme/format-imbrique`), toutes deux itératives et en O(n). L'import se termine **toujours** par la validation complète du noyau (R1 à R8). L'aller-retour est exact (prouvé par tests par propriétés). Théorie complète : [phase 4 › 02](../04-phase-4-format-d-echange-imbrique/02-conception-et-theorie.md).
+
+---
+
 ## 8. Du modèle à la réalité : interpréter ou générer
 
 Le niveau M0 peut être produit de deux façons :
 
-| | **Interprétation** (tranche 1, le canevas) | **Génération** (tranche 3, à venir) |
+| | **Interprétation** (le canevas) | **Génération** (les générateurs, phase 2) |
 |---|---|---|
-| Principe | Parcourir le modèle et **afficher directement** | Parcourir le modèle et **écrire du code** (React, Vue…) |
-| Où | `Canevas.tsx` : table `rendus` composant → fonction de rendu | futurs paquets `generateur-react`, `generateur-vue` |
-| Point commun | Un **parcours récursif** de l'arbre et une **table** « composant → traduction » | idem |
+| Principe | Parcourir le modèle et **afficher directement** | Parcourir le modèle et **écrire du code** (React, Vue) |
+| Où | `Canevas.tsx` affiche l'arbre web | `generateur-react`, `generateur-vue` écrivent l'arbre web en JSX ou en template |
+| Point commun | **Les mêmes règles** : `rendu-web` traduit le modèle (M1), avec l'aide du catalogue (M2), en un arbre web commun | idem |
 
-Le canevas est donc un **premier « générateur »**, qui produit des éléments React au lieu de texte. Les générateurs de la tranche 3 auront la **même forme**, et il ne faudra **pas toucher au noyau** pour les ajouter.
+Depuis la phase 2, interprétation et génération partagent **la même** étape modèle → web. Ce que l'on voit est donc, **par construction**, ce que l'on exporte. C'est mesuré par la recette de parité. Théorie complète (PIM, PSM, M2M, M2T) : [phase 2 › 03](../02-phase-2-generateurs-react-vue/03-transformation-modele-vers-code.md).
 
 ---
 
-## 9. Ce que le métamodèle v1 ne sait pas (encore) exprimer
+## 9. Ce que le métamodèle ne sait pas (encore) exprimer
 
 À dire honnêtement si on te le demande :
 
 - **une seule page** : pas de navigation ni de liste de pages ;
 - **pas de données ni de logique** : pas de variables, d'événements (« au clic, faire… ») ni de liaison à une API ;
-- **le style est limité** aux propriétés déclarées (pas de CSS libre) ;
+- **le style est limité** aux propriétés déclarées et à une palette fixe (pas de CSS libre, pas encore de thèmes modifiables) ;
 - **les définitions de composants sont en dur** dans `composants-base.ts`, pas encore chargées comme plugins ;
-- **la validation est écrite à la main**. La tranche 2 prévoit un **JSON Schema** (un standard), qui permettra aussi de valider dans d'autres langages et de documenter le format.
+- **une partie des règles (R3, R7, R8, clé = id) n'existe que dans le noyau** : JSON Schema ne peut pas les exprimer (§7 bis). Un autre outil qui n'utilise que le schéma peut donc accepter un document mal relié.
 
-Ce sont des **limites de périmètre** (tranche 1), pas des défauts de conception : le versionnement (§7) et la séparation structure / vocabulaire (§3) sont faits pour accueillir ces extensions.
+Ce sont des **limites de périmètre**, pas des défauts de conception : le versionnement (§7) et la séparation structure / vocabulaire (§3) sont faits pour accueillir ces extensions.
 
 ---
 

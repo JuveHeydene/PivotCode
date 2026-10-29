@@ -1,0 +1,25 @@
+{
+  "name": "@plateforme/schema-json",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "ecrire": "ECRIRE_SCHEMA=1 vitest run test/fichier-publie.test.ts"
+  },
+  "dependencies": {
+    "@plateforme/format-imbrique": "workspace:*",
+    "@plateforme/noyau": "workspace:*"
+  },
+  "devDependencies": {
+    "@plateforme/rendu-web": "workspace:*",
+    "@types/node": "^24.19.2",
+    "ajv": "^8.20.0",
+    "fast-check": "^4.10.2",
+    "vitest": "^5.0.5"
+  }
+}

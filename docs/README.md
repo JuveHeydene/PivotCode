@@ -9,6 +9,9 @@ docs/
 ├── README.md                              ← CE FICHIER : carte, conventions, avancement
 ├── 00-analyse-et-conception/              ← POURQUOI et QUOI : besoins, existant, vision, plan
 ├── 01-phase-1-modele-pivot-et-editeur/    ← COMMENT on a réalisé la phase 1 (historique, figé)
+├── 02-phase-2-generateurs-react-vue/      ← COMMENT on a réalisé la phase 2 (historique, figé)
+├── 03-phase-3-deplacement-et-json-schema/ ← COMMENT on a réalisé la phase 3 (historique, figé)
+├── 04-phase-4-format-d-echange-imbrique/  ← COMMENT on a réalisé la phase 4 (historique, figé)
 ├── 0N-phase-N-…/                          ← les phases suivantes, même ossature
 └── reference/                             ← L'ÉTAT ACTUEL du système (toujours à jour)
 ```
@@ -16,7 +19,7 @@ docs/
 | Dossier | Nature | Question à laquelle il répond | Évolue ? |
 |---|---|---|---|
 | [00-analyse-et-conception/](00-analyse-et-conception/) | Analyse | Quels besoins ? Que fait l'existant ? Que veut-on construire, dans quel ordre ? | Rarement (à chaque changement de cap) |
-| [01-phase-1-modele-pivot-et-editeur/](01-phase-1-modele-pivot-et-editeur/) | **Historique** | Qu'a-t-on fait en phase 1, comment, avec quels problèmes, quelle architecture **à ce moment-là** ? | **Non**, une fois la phase close (on n'ajoute que des liens « Évolutions ultérieures ») |
+| [01-phase-1-…/](01-phase-1-modele-pivot-et-editeur/), [02-phase-2-…/](02-phase-2-generateurs-react-vue/), [03-phase-3-…/](03-phase-3-deplacement-et-json-schema/), [04-phase-4-…/](04-phase-4-format-d-echange-imbrique/) | **Historique** | Qu'a-t-on fait dans chaque phase, comment, avec quels problèmes, quelle architecture **à ce moment-là** ? | **Non**, une fois la phase close (on n'ajoute que des liens « Évolutions ultérieures ») |
 | [reference/](reference/) | **Vivant** | Comment le système fonctionne-t-il **aujourd'hui** ? | **Oui**, à la fin de chaque phase |
 
 ## 2. État d'avancement
@@ -25,8 +28,9 @@ docs/
 |---|---|---|---|
 | 0 | Analyse des besoins, étude de l'existant, proposition de conception | ✅ Faite | [00-analyse-et-conception/00-objectifs-du-projet.md](00-analyse-et-conception/00-objectifs-du-projet.md) |
 | **1** | **Modèle pivot + éditeur visuel, synchronisés dans les deux sens** | ✅ **Close le 20/10/2026** | [01-phase-1…/00-objectifs-et-bilan.md](01-phase-1-modele-pivot-et-editeur/00-objectifs-et-bilan.md) |
-| 2 | Déplacement de nœuds, glisser-déposer, métamodèle en JSON Schema | À venir | — |
-| 3 | Générateurs de code React et Vue | À venir | — |
+| **2** | **Mise en page et style ; générateurs React et Vue ; export ; parité mesurée** | ✅ **Close le 29/10/2026** | [02-phase-2…/00-objectifs-et-bilan.md](02-phase-2-generateurs-react-vue/00-objectifs-et-bilan.md) |
+| **3** | **Déplacer, glisser-déposer, Monter / Descendre ; métamodèle en JSON Schema ; tests par propriétés** | ✅ **Close le 29/10/2026** | [03-phase…/00-objectifs-et-bilan.md](03-phase-3-deplacement-et-json-schema/00-objectifs-et-bilan.md) |
+| **4** | **Format d'échange imbriqué** (à plat ↔ imbriqué), son JSON Schema récursif, import dans l'éditeur | ✅ **Close le 29/10/2026** | [04-phase…/00-objectifs-et-bilan.md](04-phase-4-format-d-echange-imbrique/00-objectifs-et-bilan.md) |
 
 ## 3. Conventions
 
@@ -56,7 +60,7 @@ Quand on améliore en phase N quelque chose qui avait été fait en phase M (ave
 > Ainsi, chaque phase montre l'architecture **de son époque**, et la comparaison de phases successives montre l'**évolution** du système, ce qui est utile pour le mémoire. `reference/` montre où l'on en est.
 
 ### 3.4 Les numéros de décisions et de problèmes
-- Les décisions sont numérotées **en continu** sur tout le projet : D1 à D32 en phase 1, D33 lors de la restructuration du 21/10/2026 ; la phase 2 commencera à D34. Une décision garde son numéro pour toujours, même si elle est révisée plus tard.
+- Les décisions sont numérotées **en continu** sur tout le projet : D1 à D32 en phase 1, D33 lors de la restructuration du 21/10/2026, D34 à D52 en phase 2, D53 à D70 en phase 3, D71 à D78 en phase 4 ; la phase 5 commencera à D79. Une décision garde son numéro pour toujours, même si elle est révisée plus tard.
 - Les problèmes du journal sont préfixés par la phase : `P1-07` désigne le problème 7 de la phase 1 (noté simplement P7 dans le journal de la phase 1).
 - [reference/05-decisions-en-vigueur.md](reference/05-decisions-en-vigueur.md) indique, pour chaque décision, si elle est **en vigueur** ou **révisée**, et où.
 
@@ -67,7 +71,7 @@ Trois découpages coexistent dans les documents. Ne pas les confondre :
 | Terme | Où | Signification |
 |---|---|---|
 | **Phase 1, 2, 3…** (nos dossiers) | `docs/0N-phase-…` | Une **étape de réalisation** = une **tranche** du guide de démarrage |
-| **Tranche T1, T2…** | [03-guide-de-demarrage.md §5](00-analyse-et-conception/03-guide-de-demarrage.md) | Identique à nos phases : **phase N = tranche TN** |
+| **Tranche T1, T2…** | [03-guide-de-demarrage.md §5](00-analyse-et-conception/03-guide-de-demarrage.md) | Une partie du plan d'origine. **Correspondance réelle** : phase 1 = T1 ; **phase 2 = T3** (générateurs) + une partie de T5 (styles) ; **phase 3 = T2** (glisser-déposer, JSON Schema). L'ordre a été changé par la décision D34. La **phase 4** (format d'échange imbriqué) n'était dans aucune tranche : c'est un complément de la phase 3 |
 | **Phase P0 à P10** | [02-proposition-de-conception-et-phases.md §5](00-analyse-et-conception/02-proposition-de-conception-et-phases.md) | Les **lots fonctionnels** de la plateforme complète (noyau, éditeur, générateurs, IA…). Une tranche en touche souvent plusieurs : la phase 1 couvre une partie de P1 et le début de P2 |
 
 ### Anciens noms des documents de conception
@@ -96,6 +100,7 @@ Les documents de conception se citent entre eux par leurs anciens numéros (« l
 ```bash
 pnpm install     # une fois
 pnpm dev         # éditeur sur http://localhost:5173
-pnpm test        # tous les tests
-pnpm recette     # recette dans Chrome ; captures → docs/reference/captures/
+pnpm test        # tous les tests (279)
+pnpm recette          # recettes des phases 1, 3 et 4 dans Chrome (21 scénarios, dont le glisser-déposer et le format imbriqué) ; captures → docs/reference/captures/
+pnpm recette:export   # recette de la phase 2 : export React et Vue, installation, construction, parité
 ```

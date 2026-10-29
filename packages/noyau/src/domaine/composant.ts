@@ -18,7 +18,13 @@ type BasePropriete = {
 // et `choix` n'existe (et n'est obligatoire) que pour le type 'choix'.
 export type DefinitionPropriete =
   | (BasePropriete & { readonly type: 'texte'; readonly defaut: string })
-  | (BasePropriete & { readonly type: 'nombre'; readonly defaut: number })
+  | (BasePropriete & {
+      readonly type: 'nombre';
+      readonly defaut: number;
+      /** Bornes facultatives, incluses. */
+      readonly min?: number;
+      readonly max?: number;
+    })
   | (BasePropriete & { readonly type: 'booleen'; readonly defaut: boolean })
   | (BasePropriete & {
       readonly type: 'choix';
@@ -88,7 +94,10 @@ export function verifierValeur(definition: DefinitionPropriete, valeur: unknown)
       return typeof valeur === 'string' ? null : 'un texte est attendu';
     case 'nombre':
       // NaN et Infinity sont exclus : JSON.stringify les transformerait en null.
-      return typeof valeur === 'number' && Number.isFinite(valeur) ? null : 'un nombre fini est attendu';
+      if (typeof valeur !== 'number' || !Number.isFinite(valeur)) return 'un nombre fini est attendu';
+      if (definition.min !== undefined && valeur < definition.min) return `la valeur minimale est ${definition.min}`;
+      if (definition.max !== undefined && valeur > definition.max) return `la valeur maximale est ${definition.max}`;
+      return null;
     case 'booleen':
       return typeof valeur === 'boolean' ? null : 'un booléen (true ou false) est attendu';
     case 'choix':
